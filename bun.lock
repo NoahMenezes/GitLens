@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "gitlens",
+      "name": "codebeam",
       "devDependencies": {
         "@types/node": "^20.11.0",
         "@types/vscode": "^1.85.0",
