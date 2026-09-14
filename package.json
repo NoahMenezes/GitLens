@@ -9,6 +9,8 @@
     "ai",
     "chatgpt",
     "claude",
+    "gemini",
+    "deepseek",
     "copilot",
     "clipboard",
     "productivity",
@@ -24,6 +26,7 @@
   "main": "./dist/extension.js",
   "activationEvents": [
     "onCommand:codebeam.sendSelection",
+    "onCommand:codebeam.sendToBrowser",
     "onCommand:codebeam.chooseTarget"
   ],
   "contributes": {
@@ -31,6 +34,10 @@
       {
         "command": "codebeam.sendSelection",
         "title": "CodeBeam: Send Selection to AI"
+      },
+      {
+        "command": "codebeam.sendToBrowser",
+        "title": "CodeBeam: Send Selection to Browser AI (ChatGPT / Claude / Gemini / DeepSeek)"
       },
       {
         "command": "codebeam.chooseTarget",
@@ -49,6 +56,11 @@
       "editor/context": [
         {
           "command": "codebeam.sendSelection",
+          "when": "editorHasSelection",
+          "group": "navigation"
+        },
+        {
+          "command": "codebeam.sendToBrowser",
           "when": "editorHasSelection",
           "group": "navigation"
         }
@@ -82,6 +94,22 @@
           "type": "object",
           "default": {},
           "description": "Override launch commands per agent id, e.g. { \"copilot\": \"gh copilot\" }. Keys: opencode, claude, codex, copilot, aider."
+        },
+        "codebeam.defaultBrowser": {
+          "type": "string",
+          "enum": ["ask", "last", "chatgpt", "claude", "gemini", "deepseek"],
+          "default": "ask",
+          "description": "Which browser AI to open for 'Send Selection to Browser AI'. 'ask' shows a picker every time; 'last' reuses your last browser pick; otherwise jumps straight to ChatGPT / Claude / Gemini / DeepSeek."
+        },
+        "codebeam.rememberBrowserChoice": {
+          "type": "boolean",
+          "default": true,
+          "description": "Remember the browser AI picked in the quickpick for 'last' mode (stored in workspaceState)."
+        },
+        "codebeam.browserUrls": {
+          "type": "object",
+          "default": {},
+          "description": "Override browser AI URLs per id, e.g. { \"chatgpt\": \"https://chatgpt.com/\" }. Keys: chatgpt, claude, gemini, deepseek."
         }
       }
     }

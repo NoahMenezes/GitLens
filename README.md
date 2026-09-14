@@ -70,12 +70,16 @@ Open VS Code Settings (`Ctrl/Cmd+,`) and search **CodeBeam**:
 | `codebeam.askForPrompt` | `true` | Ask for an optional instruction to send with the code |
 | `codebeam.agentStartDelayMs` | `2000` | Wait after launching an agent before pasting (lets its UI start) |
 | `codebeam.agentCommands` | `{}` | Override launch commands, e.g. `{ "copilot": "gh copilot" }` |
+| `codebeam.defaultBrowser` | `"ask"` | Browser AI for "Send to Browser AI": `"ask"` = picker · `"last"` = reuse last pick · `"chatgpt"`/`"claude"`/`"gemini"`/`"deepseek"` = jump straight there |
+| `codebeam.rememberBrowserChoice` | `true` | Remember your browser pick for `"last"` mode |
+| `codebeam.browserUrls` | `{}` | Override chat URLs, e.g. `{ "deepseek": "https://chat.deepseek.com/" }` |
 
 ## Commands
 
 | Command | Shortcut | What it does |
 |---|---|---|
-| CodeBeam: Send Selection to AI | `Ctrl+Alt+Shift+A` | Format + send the selection |
+| CodeBeam: Send Selection to AI | `Ctrl+Alt+Shift+A` | Format + send to terminal agent (or pick a browser AI from the same picker) |
+| CodeBeam: Send Selection to Browser AI (ChatGPT / Claude / Gemini / DeepSeek) | — (palette + right-click) | Copy code + open the chat site — paste once with `Ctrl+V` there |
 | CodeBeam: Choose Send Target | — (palette only) | Re-pick target / reset to Auto / clipboard-only |
 
 ## Troubleshooting
@@ -129,13 +133,17 @@ Source is one file — `src/extension.ts`, heavily commented to explain each
 VS Code API call. Settings live under `contributes.configuration` in
 `package.json`. Package manager is Bun: use `bun add`, never npm/yarn.
 
-> Scope: terminal-based AI tools only (Claude Code, Copilot CLI, Codex,
-> OpenCode, aider, or anything in your VS Code terminal). Browser chats
-> (ChatGPT, Claude.ai, Gemini) are not supported — planned as a separate
-> companion extension.
+> Two send paths, both free with no API keys:
+> **Terminal** (Claude Code, Copilot CLI, Codex, OpenCode, aider — pasted
+> directly into the CLI prompt) and **Browser** (ChatGPT, Claude, Gemini,
+> DeepSeek — code is copied, the chat site opens, you press `Ctrl+V` once).
+> VS Code extensions cannot type into external browser tabs, so that one
+> manual paste is a platform limit, not a bug. True auto-paste would need a
+> companion browser extension (possible Phase 2).
 
 ## Roadmap
 
 - [x] Format selection as markdown + clipboard fallback
 - [x] Terminal send + agent auto-launch + paste-without-submit
+- [x] Browser send (ChatGPT / Claude / Gemini / DeepSeek — copy + open + paste once)
 - [ ] Send-history sidebar
