@@ -11,6 +11,8 @@
 //   bun run package   -> minified production build (for `vsce package`)
 
 const esbuild = require("esbuild");
+const fs = require("fs");
+const path = require("path");
 
 const isWatch = process.argv.includes("--watch");
 const isProd = process.argv.includes("--production");
@@ -39,6 +41,14 @@ async function main() {
     // One-off build, then free resources.
     await ctx.rebuild();
     await ctx.dispose();
+    if (isProd) {
+      // Prod builds emit no sourcemap — delete the stale dev map so dist/
+      // never ships a map that doesn't match the bundle.
+      const staleMap = path.join(__dirname, "dist", "extension.js.map");
+      if (fs.existsSync(staleMap)) {
+        fs.unlinkSync(staleMap);
+      }
+    }
   }
 }
 

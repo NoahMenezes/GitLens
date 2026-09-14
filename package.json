@@ -2,10 +2,15 @@
   "name": "selectbeam",
   "displayName": "SelectBeam",
   "description": "Beam your code straight to AI — no copy-paste, no tab-switching.",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "publisher": "NoahMenezes",
   "license": "MIT",
   "icon": "icon.png",
+  "repository": "https://github.com/NoahMenezes/SelectBeam.git",
+  "homepage": "https://github.com/NoahMenezes/SelectBeam#readme",
+  "bugs": {
+    "url": "https://github.com/NoahMenezes/SelectBeam/issues"
+  },
   "author": {
     "name": "Noah Menezes"
   },
@@ -40,13 +45,17 @@
       {
         "command": "selectbeam.chooseTarget",
         "title": "SelectBeam: Choose Send Target"
+      },
+      {
+        "command": "selectbeam.showBridgeStatus",
+        "title": "SelectBeam: Show Browser Bridge Status"
       }
     ],
     "keybindings": [
       {
         "command": "selectbeam.sendSelection",
-        "key": "ctrl+alt+shift+a",
-        "mac": "cmd+alt+shift+a",
+        "key": "ctrl+alt+a",
+        "mac": "cmd+alt+a",
         "when": "editorHasSelection"
       }
     ],
@@ -108,6 +117,26 @@
           "type": "object",
           "default": {},
           "description": "If a chat site address changes, write it here, for example { \"deepseek\": \"https://chat.deepseek.com/\" }."
+        },
+        "selectbeam.reuseBrowserTab": {
+          "type": "boolean",
+          "default": true,
+          "description": "Reuse the already-linked browser AI tab instead of opening a new tab every time. Needs the free SelectBeam browser companion (Firefox first). Falls back to opening the site if no live tab."
+        },
+        "selectbeam.liveTabTTLMinutes": {
+          "type": "number",
+          "default": 60,
+          "description": "How long a linked browser tab is considered fresh. After this, SelectBeam opens the site again instead of reusing. In minutes."
+        },
+        "selectbeam.bridgeEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Run the local browser bridge (localhost HTTP, no internet needed) so the browser companion can report its live tab and pick up code. Turn off if you only use copy+open."
+        },
+        "selectbeam.bridgePort": {
+          "type": "number",
+          "default": 51337,
+          "description": "Localhost port for the browser bridge. Change only if this port is taken on your machine."
         }
       }
     }
