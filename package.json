@@ -21,18 +21,12 @@
     "context"
   ],
   "categories": [
-    "AI",
-    "Other"
+    "AI"
   ],
   "engines": {
     "vscode": "^1.85.0"
   },
   "main": "./dist/extension.js",
-  "activationEvents": [
-    "onCommand:selectbeam.sendSelection",
-    "onCommand:selectbeam.sendToBrowser",
-    "onCommand:selectbeam.chooseTarget"
-  ],
   "contributes": {
     "commands": [
       {
@@ -77,52 +71,53 @@
           "type": "string",
           "enum": ["auto", "clipboard", "terminal"],
           "default": "auto",
-          "description": "Where SelectBeam sends code. 'auto' tries the terminal first and falls back to the clipboard; 'clipboard' always copies; 'terminal' always requires a terminal and shows an error if none exists."
+          "description": "Where your code goes. Auto tries the terminal first and copies if needed. Clipboard always just copies. Terminal always uses the terminal."
         },
         "selectbeam.rememberTerminalChoice": {
           "type": "boolean",
           "default": true,
-          "description": "Remember the terminal picked in the quickpick for the rest of the session (stored in workspaceState) so you are not prompted every time."
+          "description": "Remember which terminal you picked so you are asked once, not every time."
         },
         "selectbeam.askForPrompt": {
           "type": "boolean",
           "default": true,
-          "description": "After pasting code, ask for an optional instruction to append after the code block. Empty/Escape sends code only. The agent is never auto-submitted."
+          "description": "Ask for a short note after your code, for example 'explain this'. Leave it empty to send code only. SelectBeam never presses Enter for you."
         },
         "selectbeam.agentStartDelayMs": {
           "type": "number",
           "default": 2000,
-          "description": "Milliseconds to wait after launching an AI CLI before pasting code, so the TUI has time to boot."
+          "description": "How long to wait after starting an AI tool before putting code in, so the tool has time to open. In milliseconds."
         },
         "selectbeam.agentCommands": {
           "type": "object",
           "default": {},
-          "description": "Override launch commands per agent id, e.g. { \"copilot\": \"gh copilot\" }. Keys: opencode, claude, codex, copilot, aider."
+          "description": "If one of your AI tools starts with a different command, write it here, for example { \"copilot\": \"gh copilot\" }."
         },
         "selectbeam.defaultBrowser": {
           "type": "string",
           "enum": ["ask", "last", "chatgpt", "claude", "gemini", "deepseek"],
           "default": "ask",
-          "description": "Which browser AI to open for 'Send Selection to Browser AI'. 'ask' shows a picker every time; 'last' reuses your last browser pick; otherwise jumps straight to ChatGPT / Claude / Gemini / DeepSeek."
+          "description": "Which browser AI to open. Ask shows a list every time. Last reuses your last pick. Or pick one directly."
         },
         "selectbeam.rememberBrowserChoice": {
           "type": "boolean",
           "default": true,
-          "description": "Remember the browser AI picked in the quickpick for 'last' mode (stored in workspaceState)."
+          "description": "Remember your browser pick so Last works."
         },
         "selectbeam.browserUrls": {
           "type": "object",
           "default": {},
-          "description": "Override browser AI URLs per id, e.g. { \"chatgpt\": \"https://chatgpt.com/\" }. Keys: chatgpt, claude, gemini, deepseek."
+          "description": "If a chat site address changes, write it here, for example { \"deepseek\": \"https://chat.deepseek.com/\" }."
         }
       }
     }
   },
   "scripts": {
-    "vscode:prepublish": "bun run package",
+    "vscode:prepublish": "node ./esbuild.js --production",
     "compile": "bun ./esbuild.js",
     "watch": "bun ./esbuild.js --watch",
     "package": "bun ./esbuild.js --production",
+    "package-vsix": "vsce package --allow-missing-repository",
     "check-types": "tsc --noEmit",
     "test": "echo \"No tests yet (V1)\" && exit 0"
   },
