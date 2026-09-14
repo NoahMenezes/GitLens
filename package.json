@@ -35,8 +35,8 @@
     "keybindings": [
       {
         "command": "codebeam.sendSelection",
-        "key": "ctrl+alt+a",
-        "mac": "cmd+alt+a",
+        "key": "ctrl+alt+shift+a",
+        "mac": "cmd+alt+shift+a",
         "when": "editorHasSelection"
       }
     ],

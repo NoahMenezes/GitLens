@@ -5,7 +5,7 @@
 ![demo placeholder](https://via.placeholder.com/800x450?text=CodeBeam+demo+GIF+coming+soon)
 
 <!-- Replace the image above with a real screen recording (e.g. Peek on Linux,
-     then export as GIF) showing: select code -> Ctrl+Alt+A -> paste into AI. -->
+     then export as GIF) showing: select code -> Ctrl+Alt+Shift+A -> paste into AI. -->
 
 ## Install
 
@@ -36,7 +36,7 @@ code --install-extension codebeam-0.0.1.vsix
 1. Select some code in any editor.
 2. Trigger **CodeBeam: Send Selection to AI** via any of:
    - Command Palette (`Ctrl/Cmd+Shift+P` -> type "CodeBeam")
-   - Keyboard shortcut `Ctrl+Alt+A` (Linux/Windows) / `Cmd+Alt+A` (macOS)
+   - Keyboard shortcut `Ctrl+Alt+Shift+A` (Linux/Windows) / `Cmd+Alt+Shift+A` (macOS)
    - Right-click -> **CodeBeam: Send Selection to AI** (only shows with a selection)
 3. Paste (`Ctrl/Cmd+V`) into ChatGPT, Claude, Copilot Chat, etc.
 
