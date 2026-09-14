@@ -23,13 +23,18 @@
   },
   "main": "./dist/extension.js",
   "activationEvents": [
-    "onCommand:codebeam.sendSelection"
+    "onCommand:codebeam.sendSelection",
+    "onCommand:codebeam.chooseTarget"
   ],
   "contributes": {
     "commands": [
       {
         "command": "codebeam.sendSelection",
         "title": "CodeBeam: Send Selection to AI"
+      },
+      {
+        "command": "codebeam.chooseTarget",
+        "title": "CodeBeam: Choose Send Target"
       }
     ],
     "keybindings": [
@@ -48,6 +53,22 @@
           "group": "navigation"
         }
       ]
+    },
+    "configuration": {
+      "title": "CodeBeam",
+      "properties": {
+        "codebeam.defaultTarget": {
+          "type": "string",
+          "enum": ["auto", "clipboard", "terminal"],
+          "default": "auto",
+          "description": "Where CodeBeam sends code. 'auto' tries the terminal first and falls back to the clipboard; 'clipboard' always copies; 'terminal' always requires a terminal and shows an error if none exists."
+        },
+        "codebeam.rememberTerminalChoice": {
+          "type": "boolean",
+          "default": true,
+          "description": "Remember the terminal picked in the quickpick for the rest of the session (stored in workspaceState) so you are not prompted every time."
+        }
+      }
     }
   },
   "scripts": {
