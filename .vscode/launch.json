@@ -1,6 +1,6 @@
 {
   // Launches a sandboxed VS Code window ("Extension Development Host")
-  // with CodeBeam loaded from this folder. Press F5 to start.
+  // with GitLens loaded from this folder. Press F5 to start.
   "version": "0.2.0",
   "configurations": [
     {
