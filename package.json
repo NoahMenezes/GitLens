@@ -67,6 +67,21 @@
           "type": "boolean",
           "default": true,
           "description": "Remember the terminal picked in the quickpick for the rest of the session (stored in workspaceState) so you are not prompted every time."
+        },
+        "codebeam.askForPrompt": {
+          "type": "boolean",
+          "default": true,
+          "description": "After pasting code, ask for an optional instruction to append after the code block. Empty/Escape sends code only. The agent is never auto-submitted."
+        },
+        "codebeam.agentStartDelayMs": {
+          "type": "number",
+          "default": 2000,
+          "description": "Milliseconds to wait after launching an AI CLI before pasting code, so the TUI has time to boot."
+        },
+        "codebeam.agentCommands": {
+          "type": "object",
+          "default": {},
+          "description": "Override launch commands per agent id, e.g. { \"copilot\": \"gh copilot\" }. Keys: opencode, claude, codex, copilot, aider."
         }
       }
     }
@@ -82,7 +97,7 @@
   "devDependencies": {
     "@types/node": "^20.11.0",
     "@types/vscode": "^1.85.0",
-    "esbuild": "^0.21.0",
+    "esbuild": "^0.28.2",
     "typescript": "^5.3.3"
   }
 }

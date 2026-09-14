@@ -1,123 +1,141 @@
 # CodeBeam
 
-> Beam your code straight to AI — no copy-paste, no tab-switching.
+> Select code → press a shortcut → it lands in your AI coding agent. No copy-paste.
 
-![demo placeholder](https://via.placeholder.com/800x450?text=CodeBeam+demo+GIF+coming+soon)
+CodeBeam sends your selected code (with file path + line numbers) straight
+into a terminal AI tool — OpenCode, Claude Code, Codex CLI, Copilot CLI, or
+aider — running inside VS Code. Nothing to configure to start.
 
-<!-- Replace the image above with a real screen recording (e.g. Peek on Linux,
-     then export as GIF) showing: select code -> Ctrl+Alt+Shift+A -> paste into AI. -->
+## What you need
 
-## Install
+1. **VS Code** (1.85 or newer)
+2. **Bun** — install from <https://bun.sh> (`curl -fsSL https://bun.sh/install | bash`)
+3. **At least one AI CLI** installed, e.g. `opencode`, `claude`, `codex`, `copilot`, or `aider`
 
-### From source (dev)
+## Setup (3 steps)
 
 ```bash
+# 1. Clone and enter the project
+git clone <your-repo-url> codebeam
 cd codebeam
+
+# 2. Install dependencies (always with Bun — never npm/yarn here)
 bun install
+
+# 3. Build once
 bun run compile
 ```
 
-Then press **F5** in VS Code to launch the Extension Development Host.
+Then press **F5** in VS Code. A new window ("Extension Development Host")
+opens with CodeBeam loaded. That's it.
 
-### From `.vsix` (packaged)
+## Daily use
 
-```bash
-cd codebeam
-bun run package
-vsce package
-code --install-extension codebeam-0.0.1.vsix
-```
+1. Select some code in any file.
+2. Press `Ctrl+Alt+Shift+A` (macOS: `Cmd+Alt+Shift+A`).
+   Or: `Ctrl/Cmd+Shift+P` → type **CodeBeam** → pick a command.
+   Or: right-click the selection → **CodeBeam: Send Selection to AI**.
+3. What happens next:
+   - **No terminal open** → CodeBeam asks which agent to launch
+     (OpenCode, Claude Code, Codex, Copilot CLI, aider),
+     opens it, and pastes your code into its prompt.
+     It never presses Enter — you review and submit yourself.
+   - **Terminal open, agent already running there** → code is pasted in.
+   - **Terminal open, plain shell** → CodeBeam asks first
+     (launch an agent / paste anyway / clipboard) instead of dumping
+     raw text into your shell.
+   - Optionally type an instruction ("explain this", "find the bug")
+     when asked, or leave it empty for code only.
+4. To change your mind anytime: command palette →
+   **CodeBeam: Choose Send Target** (Auto reset / Clipboard only / terminal).
 
-> Before publishing, set the `publisher` field in `package.json` to your
-> [Visual Studio Marketplace publisher name](https://marketplace.visualstudio.com/manage).
-
-## Usage
-
-1. Select some code in any editor.
-2. Trigger **CodeBeam: Send Selection to AI** via any of:
-   - Command Palette (`Ctrl/Cmd+Shift+P` -> type "CodeBeam")
-   - Keyboard shortcut `Ctrl+Alt+Shift+A` (Linux/Windows) / `Cmd+Alt+Shift+A` (macOS)
-   - Right-click -> **CodeBeam: Send Selection to AI** (only shows with a selection)
-3. If a terminal is open (e.g. running Claude Code, Copilot CLI, Codex,
-   OpenCode, aider), the snippet is typed into it for review — press Enter
-   there to submit. Otherwise it is copied to the clipboard for pasting.
-
-## How it works
-
-Terminal-first, clipboard-fallback:
-
-- **Terminal open → send to terminal.** The formatted block is sent via
-  `terminal.sendText(block, false)` — the `false` means CodeBeam does NOT
-  press Enter for you. You review the prompt in your AI CLI and submit it
-  yourself. The terminal is shown (`terminal.show()`) and the status bar
-  confirms: `$(terminal) Sent to terminal`.
-- **No terminal open → clipboard fallback.** The same block is copied via
-  `vscode.env.clipboard.writeText()` and the status bar says
-  `$(clippy) Copied — no terminal open`.
-- **Multiple terminals → quickpick.** When `vscode.window.terminals`
-  has more than one entry, you pick the target by terminal name. The pick
-  is remembered for the session (see `rememberTerminalChoice` below) so
-  you are only asked once.
-- **Send failure → clipboard.** If `sendText` throws, CodeBeam copies to
-  the clipboard instead and tells you in the status bar, so no snippet is
-  ever lost.
-
-To manually re-pick at any time, run **CodeBeam: Choose Send Target** from
-the Command Palette: choose Auto (reset), Clipboard only (this session),
-or a specific terminal by name.
-
-## Settings
-
-- `codebeam.defaultTarget` (`"auto"` | `"clipboard"` | `"terminal"`,
-  default `"auto"`):
-  - `"auto"` — try the terminal first, fall back to the clipboard.
-  - `"clipboard"` — always copy, even when terminals are open.
-  - `"terminal"` — always require a terminal; shows an error if none exists.
-- `codebeam.rememberTerminalChoice` (boolean, default `true`): after a
-  quickpick terminal selection, remember that terminal (in extension
-  `workspaceState`) for the rest of the session so you aren't prompted
-  every time. Set to `false` to be asked on every send with 2+ terminals.
-
-> Scope note: Currently supports terminal-based AI tools (Claude Code,
-> Copilot CLI, Codex, OpenCode, aider, etc, or any tool running in your VS
-> Code terminal). Browser-based AI chats (ChatGPT, Claude.ai, Gemini) are
-> not yet supported — planned as a separate companion extension.
-
-What gets copied looks like this:
+What the AI receives looks like this:
 
 ````markdown
-```typescript
-// src/extension.ts (lines 12-24)
-const x = 42;
-console.log(x);
+```python
+// MergeSort.py (lines 12-25)
+def merge(arr, low, mid, high):
+    ...
 ```
 ````
 
-The `// path (lines X-Y)` header tells the AI exactly where the snippet came
-from, and the language fence preserves syntax highlighting.
+## Settings
 
-## Why CodeBeam?
+Open VS Code Settings (`Ctrl/Cmd+,`) and search **CodeBeam**:
 
-Copy-pasting code into AI tools is small friction repeated 50x a day: select,
-copy, switch tab, type a filename for context, paste, switch back. CodeBeam
-removes the manual context-adding step — the file path, line range, and
-language tag travel with the snippet automatically. V1 just uses the clipboard
-(the universal API every AI tool already supports); later versions will
-auto-inject into an active terminal running Claude Code / aider and keep a
-send-history sidebar.
+| Setting | Default | What it does |
+|---|---|---|
+| `codebeam.defaultTarget` | `"auto"` | `"auto"` = terminal first, clipboard fallback · `"clipboard"` = always copy · `"terminal"` = always use terminal |
+| `codebeam.rememberTerminalChoice` | `true` | Remember your terminal pick so you're asked once, not every time |
+| `codebeam.askForPrompt` | `true` | Ask for an optional instruction to send with the code |
+| `codebeam.agentStartDelayMs` | `2000` | Wait after launching an agent before pasting (lets its UI start) |
+| `codebeam.agentCommands` | `{}` | Override launch commands, e.g. `{ "copilot": "gh copilot" }` |
 
-## Dev
+## Commands
 
+| Command | Shortcut | What it does |
+|---|---|---|
+| CodeBeam: Send Selection to AI | `Ctrl+Alt+Shift+A` | Format + send the selection |
+| CodeBeam: Choose Send Target | — (palette only) | Re-pick target / reset to Auto / clipboard-only |
+
+## Troubleshooting
+
+**`[DEP0169] url.parse() ... Use the WHATWG URL API instead` in the Debug Console**
+Harmless noise from VS Code's own extension host — not from CodeBeam
+(our code never calls `url.parse()`). It changes nothing about how the
+extension runs. This repo already sets `NODE_NO_WARNINGS=1` in
+`.vscode/launch.json` so you won't see it when pressing F5. If you still
+see it, update VS Code to the latest version; the warning comes from its
+bundled Node runtime.
+
+**Terminal fills with `bquote>` lines after sending**
+You pasted a code fence into a plain shell (old behavior). Current
+CodeBeam asks before pasting into an unknown terminal. If you're ever
+stuck in `bquote>`, press `Ctrl+C` to get your prompt back, then make
+sure your AI agent (`opencode`, `claude`, …) is actually running in that
+terminal before sending.
+
+**Nothing happens when I press the shortcut**
+The shortcut only fires with an active selection (`when: editorHasSelection`).
+Highlight code first. If another extension stole the keybinding, rebind it
+in File → Preferences → Keyboard Shortcuts → search "CodeBeam".
+
+**`vsce package` / install fails**
+Set the `publisher` field in `package.json` to your
+[Marketplace publisher name](https://marketplace.visualstudio.com/manage),
+then:
 ```bash
-bun install     # install deps (never npm/yarn — this repo uses Bun)
-bun run watch   # esbuild watch mode (re-bundles on save)
+bun run package
+npx @vscode/vsce package
+code --install-extension codebeam-0.0.1.vsix
 ```
 
-Then **F5** to debug. See `src/extension.ts` — it's heavily commented for
-learning the VS Code API.
+**Commands not showing in a fresh clone**
+You skipped the build. Run `bun install && bun run compile`, then F5.
+VS Code loads the extension from `dist/extension.js`, which only exists
+after a build.
+
+## For developers
+
+```bash
+bun install     # install deps
+bun run watch   # rebuild on every save (used automatically by F5)
+bun run compile # one-off build
+bun run check-types  # type-check only (tsc --noEmit)
+bun run package # minified production build
+```
+
+Source is one file — `src/extension.ts`, heavily commented to explain each
+VS Code API call. Settings live under `contributes.configuration` in
+`package.json`. Package manager is Bun: use `bun add`, never npm/yarn.
+
+> Scope: terminal-based AI tools only (Claude Code, Copilot CLI, Codex,
+> OpenCode, aider, or anything in your VS Code terminal). Browser chats
+> (ChatGPT, Claude.ai, Gemini) are not supported — planned as a separate
+> companion extension.
 
 ## Roadmap
 
-- [x] V1: format selection as markdown + copy to clipboard + status-bar confirm
-- [x] V2: auto-type/paste into active terminal running an AI CLI (terminal-first, clipboard fallback + choose-target command)
-- [ ] V3: sidebar webview with send history
+- [x] Format selection as markdown + clipboard fallback
+- [x] Terminal send + agent auto-launch + paste-without-submit
+- [ ] Send-history sidebar

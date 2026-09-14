@@ -11,7 +11,12 @@
       // Pick up sourcemaps from the esbuild bundle for breakpoints.
       "outFiles": ["${workspaceFolder}/dist/**/*.js"],
       // Runs the default build task (bun run watch) before launching.
-      "preLaunchTask": "${defaultBuildTask}"
+      "preLaunchTask": "${defaultBuildTask}",
+      // Silence harmless Node deprecation noise (e.g. DEP0169 `url.parse()`,
+      // which comes from VS Code's own host — not from this extension).
+      "env": {
+        "NODE_NO_WARNINGS": "1"
+      }
     }
   ]
 }
