@@ -38,15 +38,24 @@ export const MAX_PASTE_CHARS = 500_000;
 
 // --- Catalogs --------------------------------------------------------------
 
-// The five terminal agents we support. Commands are the standard CLI
+// The terminal agents we support. Commands are the standard CLI
 // entry points; users can override them in settings if theirs differ
-// (e.g. `gh copilot` vs `copilot`).
+// (e.g. `gh copilot` vs `copilot`, or a renamed binary).
+// Run-once tools (e.g. sgpt) are intentionally NOT here: they exit
+// immediately, so launch-then-paste cannot work with them.
 export const AGENTS: AgentDef[] = [
   { id: "opencode", label: "$(terminal) OpenCode", description: "Launch `opencode`", defaultCommand: "opencode" },
   { id: "claude", label: "$(terminal) Claude Code", description: "Launch `claude`", defaultCommand: "claude" },
   { id: "codex", label: "$(terminal) Codex CLI", description: "Launch `codex`", defaultCommand: "codex" },
   { id: "copilot", label: "$(terminal) Copilot CLI", description: "Launch `copilot`", defaultCommand: "copilot" },
   { id: "aider", label: "$(terminal) aider", description: "Launch `aider`", defaultCommand: "aider" },
+  { id: "gemini", label: "$(terminal) Gemini CLI", description: "Launch `gemini`", defaultCommand: "gemini" },
+  { id: "qwen", label: "$(terminal) Qwen Code", description: "Launch `qwen`", defaultCommand: "qwen" },
+  { id: "cursor-agent", label: "$(terminal) Cursor agent", description: "Launch `cursor-agent`", defaultCommand: "cursor-agent" },
+  { id: "amp", label: "$(terminal) Amp", description: "Launch `amp`", defaultCommand: "amp" },
+  { id: "agy", label: "$(terminal) Anti-Gravity", description: "Launch `agy`", defaultCommand: "agy" },
+  { id: "crush", label: "$(terminal) Crush", description: "Launch `crush`", defaultCommand: "crush" },
+  { id: "goose", label: "$(terminal) Goose", description: "Launch `goose`", defaultCommand: "goose" },
 ];
 
 // Free browser chat targets. URLs are the canonical "new chat" entry points.

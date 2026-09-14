@@ -3,6 +3,11 @@
   "name": "SelectBeam Bridge",
   "version": "0.0.3",
   "description": "Reuses your linked AI chat tab for SelectBeam sends (no new-tab spam). Localhost only, no cloud.",
+  "icons": {
+    "48": "icon.png",
+    "96": "icon.png",
+    "128": "icon.png"
+  },
   "permissions": ["storage", "tabs"],
   "host_permissions": [
     "http://127.0.0.1/*",
@@ -34,6 +39,7 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "SelectBeam Bridge"
+    "default_title": "SelectBeam Bridge",
+    "default_icon": "icon.png"
   }
 }

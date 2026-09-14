@@ -16,8 +16,8 @@ port it to WXT 1:1 — the VS Code HTTP endpoints do NOT change.
 
 ## Keep identical
 
-- localhost base `http://127.0.0.1:{port}` and all 6 endpoints + JSON shapes
-  (`/status`, `/tabs` GET+POST, `/pending`, `/ack`, `/queue`). No token —
+- localhost base `http://127.0.0.1:{port}` and all 8 endpoints + JSON shapes
+  (`/status`, `/tabs` GET+POST, `/pending`, `/ack`, `/filled`, `/bye`, `/queue`). No token —
   server trusts the extension Origin; background page owns all fetches.
 - Poll 2s, heartbeat 15s, title-change re-heartbeat.
 - Per-provider selector table and verified `insertText` injection.

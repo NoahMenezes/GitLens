@@ -2,8 +2,11 @@
 
 No token, no account, nothing to type:
 
-1. In Firefox, open `about:debugging#/runtime/this-firefox`.
-2. Click **Load Temporary Add-on** and pick `browser/manifest.json` from this repo.
-3. Open your AI chat in a tab and keep it open.
+- **Firefox family:** `about:debugging` → Load Temporary Add-on →
+  `browser/manifest.json`.
+- **Chrome, Edge, Brave, Opera, Vivaldi, Arc:** copy
+  `browser/manifest.chrome.json` over `browser/manifest.json`, then your
+  browser's extensions page → Developer mode → Load unpacked → `browser/`.
 
-That is the whole setup. Every supported chat tab links itself automatically.
+Then open your AI chat in a tab and keep it open. That is the whole setup —
+every supported chat tab links itself automatically.

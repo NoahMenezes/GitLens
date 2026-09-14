@@ -56,7 +56,7 @@ export async function resolveTargetTerminal(
       openTerminals.map((t: vscode.Terminal): string => t.name),
       {
         placeHolder:
-          "SelectBeam: pick the terminal (Claude Code, Copilot CLI, Codex, OpenCode, aider, …)",
+          "SelectBeam: pick the terminal (OpenCode, Claude Code, Codex, Gemini CLI, Qwen, …)",
       }
     );
   if (!pickedName) {

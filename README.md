@@ -30,13 +30,18 @@ You then review it and press Enter yourself. SelectBeam never submits for you.
 
 1. **VS Code 1.85 or newer.** That is all most people need.
 2. One of these, depending on how you want to work:
-   - **Terminal way:** one AI tool installed — `opencode`, `claude`,
-     `codex`, `copilot`, or `aider`.
-   - **Browser way:** no install needed. Just pick ChatGPT, Claude,
-     Gemini, or DeepSeek and SelectBeam opens it for you.
+   - **Terminal way:** one AI tool installed — OpenCode (`opencode`),
+     Claude Code (`claude`), Codex CLI (`codex`), Copilot CLI (`copilot`),
+     aider (`aider`), Gemini CLI (`gemini`), Qwen Code (`qwen`),
+     Cursor agent (`cursor-agent`), Amp (`amp`), Anti-Gravity (`agy`),
+     Crush (`crush`), or Goose (`goose`). Different binary name? Set it
+     in `selectbeam.agentCommands`, e.g. `{ "copilot": "gh copilot" }`.
+   - **Browser way:** no install needed. ChatGPT, Claude, Gemini,
+     DeepSeek, Grok, or Copilot — SelectBeam opens it for you.
    - **Browser way with tab reuse (recommended):** install the free
-     `browser/` companion in Firefox (see below). Then repeat sends go to
-     the SAME chat tab instead of opening a new tab every time.
+     `browser/` companion (Chrome, Edge, Brave, Opera, Vivaldi, Arc,
+     Firefox, Zen… — see below). Then repeat sends refill the SAME chat
+     tab instead of opening a new tab every time.
 
 No account, no API key, no setup. Install the extension and use it.
 
@@ -108,7 +113,7 @@ for most people.
 | `selectbeam.rememberTerminalChoice` | `true` | Remembers which terminal you picked so you are asked once, not every time. |
 | `selectbeam.askForPrompt` | `true` | Asks for a short note after your code, for example “explain this”. Leave it empty to send code only. |
 | `selectbeam.agentStartDelayMs` | `2000` | How long to wait after starting an AI tool before putting code in, so the tool has time to open. In milliseconds. |
-| `selectbeam.agentCommands` | `{}` | If one of your AI tools starts with a different command, write it here. Example: `{ "copilot": "gh copilot" }`. |
+| `selectbeam.agentCommands` | `{}` | Your binary is named differently? Map it here, e.g. `{ "copilot": "gh copilot" }`. |
 | `selectbeam.defaultBrowser` | `"last"` | Ask once, then automatic. `"ask"` asks every time. Or fix one: `"chatgpt"`, `"claude"`, `"gemini"`, `"deepseek"`, `"grok"`, `"copilot"`. The palette command always lets you pick (and updates last). |
 | `selectbeam.rememberBrowserChoice` | `true` | Remembers your browser pick so `"last"` works. |
 | `selectbeam.browserUrls` | `{}` | If a chat site address changes, write it here. Example: `{ "deepseek": "https://chat.deepseek.com/" }`. |
@@ -121,26 +126,49 @@ To reset everything, run **SelectBeam: Choose Send Target** and pick
 **Auto**. That clears the saved terminal, the saved browser, live tabs,
 and the clipboard-only mode.
 
-## Browser companion — Firefox first (no internet needed, no setup)
+## Browser companion (no internet needed, no setup)
 
 The companion is vanilla MV3 (`browser/` folder, no `npm install`, no build).
-Firefox first, Chrome/Edge next with the same files. It works with ChatGPT,
+One build per engine covers every browser on it. It works with ChatGPT,
 Claude, Gemini, DeepSeek, Grok, and Copilot — every model the same way.
 
 **There is nothing to pair.** No token, no account, nothing to type. Every
 chat tab links itself the moment it loads.
 
-**Firefox setup (temporary install, good for daily use):**
+**Chromium family — Chrome, Edge, Brave, Opera, Vivaldi, Arc:**
 
-1. In Firefox, open `about:debugging#/runtime/this-firefox`.
-2. Click **Load Temporary Add-on**, pick the file
-   `browser/manifest.json` from this repo. Confirm “SelectBeam Bridge”
-   appears.
-3. Open your chats (ChatGPT, Claude, …) in tabs and keep them open.
-4. Back in VS Code: highlight code, press `Ctrl+Alt+A`
-   (`Cmd+Alt+A` on Mac), pick an AI once. The tab auto-fills in
-   ~2 seconds. Every further send refills the same tab — no new tabs,
-   no pasting, no questions.
+1. Copy `browser/manifest.chrome.json` over `browser/manifest.json`
+   (only the `background` key differs).
+2. Open your browser's extensions page, enable **Developer mode**,
+   **Load unpacked**, pick the `browser/` folder:
+
+   | Browser | Extensions page |
+   |---|---|
+   | Chrome | `chrome://extensions` |
+   | Edge | `edge://extensions` |
+   | Brave | `brave://extensions` (if fills ever miss, try Shields down for the chat site) |
+   | Opera / GX | `opera://extensions` |
+   | Vivaldi | `vivaldi://extensions` |
+   | Arc | `arc://extensions` |
+
+3. Open your chats, keep them open, send from VS Code — tabs self-link.
+
+**Firefox family — Firefox, Dev Edition, Zen, LibreWolf, Waterfox, Floorp:**
+
+1. Open `about:debugging#/runtime/this-firefox`.
+2. Click **Load Temporary Add-on**, pick `browser/manifest.json`.
+3. Open your chats, keep them open, send from VS Code — tabs self-link.
+   (Temporary add-ons unload on browser restart — re-load takes 10 seconds.
+   Nothing to re-pair.)
+
+**Safari:** coming later — it needs an Xcode wrapper project and a Mac to
+test. The companion code is already portable (vanilla JS, no timers in the
+background), so it's a packaging job, not a rewrite.
+
+Back in VS Code: highlight code, press `Ctrl+Alt+A` (`Cmd+Alt+A` on Mac),
+pick an AI once. The tab auto-fills in ~2 seconds. Every further send
+offers **Last used tab** or **New chat** — no new tabs unless you ask,
+no pasting, no questions.
 
 First-ever send to a new AI opens its chat and still auto-fills when it
 loads. Switch AI anytime via the palette command **SelectBeam: Send
@@ -148,11 +176,8 @@ Selection to Browser AI**, which always lets you pick (and updates last).
 
 Notes:
 
-- Temporary add-ons unload when Firefox closes. Re-load after restart
-  (takes 10 seconds). Nothing to re-pair.
-- For a permanent install you need signing (Mozilla Add-ons) or
-  Firefox Developer / ESR with `xpinstall.signatures.required = false`.
-  That step needs internet once — skip it while offline.
+- For a permanent install you need store signing (needs internet once).
+  Until then, developer/temporary loading above is the daily flow.
 - The bridge is `http://127.0.0.1:51337` only. No data leaves your
   machine. Websites are locked out by extension-origin check, so there is
   no password to manage. Endpoints: `GET /status`, `POST /tabs`,
@@ -160,14 +185,6 @@ Notes:
   `POST /queue`.
 - Keep one VS Code window owning the bridge. A second window shows a
   warning and falls back to copy+open.
-
-**Chrome / Edge (when you are ready):**
-
-1. Copy `browser/manifest.chrome.json` over `browser/manifest.json`
-   (only the `background` key differs).
-2. Open `chrome://extensions`, enable Developer mode, **Load unpacked**,
-   pick the `browser/` folder.
-3. Same as Firefox from there — no pairing, tabs self-link.
 
 **WXT later (optional):** when you have good internet, the same logic
 ports 1:1 to WXT (`entrypoints/background.ts`, one content file per
@@ -194,10 +211,10 @@ change it under File → Preferences → Keyboard Shortcuts, search
 
 **The browser opened a new tab every time.**
 That means no tab is linked yet — the companion may have unloaded
-(temporary add-ons unload on Firefox restart) or the chat was closed
-(closing a chat forgets it at once, so the next send opens fresh).
-Reload in `about:debugging`, keep the chat open, send again. Check
-**Show Browser Bridge Status** for live tabs.
+(Firefox temporary add-ons unload on restart, re-load them; Chromium
+unpacked installs persist) or the chat was closed (closing a chat forgets
+it at once, so the next send opens fresh). Keep the chat open, send again.
+Check **Show Browser Bridge Status** for live tabs.
 
 **Page badge says “VS Code bridge off?”.**
 Make sure VS Code is open (the bridge runs inside the extension),

@@ -8,7 +8,7 @@ All changes to SelectBeam will be listed here.
   actually appear), with three strategies in order — editor-native
   `insertText`, native value setter, append + input event — instead of one
   blind attempt. Still never auto-submits.
-- Failed pastes retry each poll (~20s budget), then fall back to a manual
+- Failed pastes retry each poll (~30s budget), then fall back to a manual
   `Ctrl+V` / `Cmd+V` toast. Nothing is lost: VS Code always copies first.
 - New on-page diagnostics: amber “not linked” vs green “linked ✓” badge
   (click = fill now), plus toasts when code arrives but the editor isn't
@@ -67,6 +67,15 @@ All changes to SelectBeam will be listed here.
 - Last used vs New chat: first send opens a new chat; from the second send
   on you pick **Last used tab** (refill) or **New chat** (fresh start,
   old tab forgotten at once) — for every model.
+- Companion covers all famous browsers with the two existing builds, no
+  code change: Chromium family (Chrome, Edge, Brave, Opera, Vivaldi, Arc)
+  via `manifest.chrome.json`, Firefox family (Firefox, Dev, Zen,
+  LibreWolf, Waterfox, Floorp) via `manifest.json`. Safari later (needs
+  Xcode + Mac). New `browser/CHROMIUM-SETUP.md` printable guide.
+- Terminal agents: +7 — Gemini CLI (`gemini`), Qwen Code (`qwen`), Cursor
+  agent (`cursor-agent`), Amp (`amp`), Anti-Gravity (`agy`), Crush
+  (`crush`), Goose (`goose`). Any binary name overridable via
+  `selectbeam.agentCommands`.
 
 ## [0.0.2] — 2026-09-14
 
