@@ -1,8 +1,8 @@
-# CodeBeam
+# SelectBeam
 
 > Select code → press a shortcut → it lands in your AI coding agent. No copy-paste.
 
-CodeBeam sends your selected code (with file path + line numbers) straight
+SelectBeam sends your selected code (with file path + line numbers) straight
 into a terminal AI tool — OpenCode, Claude Code, Codex CLI, Copilot CLI, or
 aider — running inside VS Code. Nothing to configure to start.
 
@@ -16,8 +16,8 @@ aider — running inside VS Code. Nothing to configure to start.
 
 ```bash
 # 1. Clone and enter the project
-git clone <your-repo-url> codebeam
-cd codebeam
+git clone <your-repo-url> selectbeam
+cd selectbeam
 
 # 2. Install dependencies (always with Bun — never npm/yarn here)
 bun install
@@ -27,27 +27,27 @@ bun run compile
 ```
 
 Then press **F5** in VS Code. A new window ("Extension Development Host")
-opens with CodeBeam loaded. That's it.
+opens with SelectBeam loaded. That's it.
 
 ## Daily use
 
 1. Select some code in any file.
 2. Press `Ctrl+Alt+Shift+A` (macOS: `Cmd+Alt+Shift+A`).
-   Or: `Ctrl/Cmd+Shift+P` → type **CodeBeam** → pick a command.
-   Or: right-click the selection → **CodeBeam: Send Selection to AI**.
+   Or: `Ctrl/Cmd+Shift+P` → type **SelectBeam** → pick a command.
+   Or: right-click the selection → **SelectBeam: Send Selection to AI**.
 3. What happens next:
-   - **No terminal open** → CodeBeam asks which agent to launch
+   - **No terminal open** → SelectBeam asks which agent to launch
      (OpenCode, Claude Code, Codex, Copilot CLI, aider),
      opens it, and pastes your code into its prompt.
      It never presses Enter — you review and submit yourself.
    - **Terminal open, agent already running there** → code is pasted in.
-   - **Terminal open, plain shell** → CodeBeam asks first
+   - **Terminal open, plain shell** → SelectBeam asks first
      (launch an agent / paste anyway / clipboard) instead of dumping
      raw text into your shell.
    - Optionally type an instruction ("explain this", "find the bug")
      when asked, or leave it empty for code only.
 4. To change your mind anytime: command palette →
-   **CodeBeam: Choose Send Target** (Auto reset / Clipboard only / terminal).
+   **SelectBeam: Choose Send Target** (Auto reset / Clipboard only / terminal).
 
 What the AI receives looks like this:
 
@@ -61,31 +61,31 @@ def merge(arr, low, mid, high):
 
 ## Settings
 
-Open VS Code Settings (`Ctrl/Cmd+,`) and search **CodeBeam**:
+Open VS Code Settings (`Ctrl/Cmd+,`) and search **SelectBeam**:
 
 | Setting | Default | What it does |
 |---|---|---|
-| `codebeam.defaultTarget` | `"auto"` | `"auto"` = terminal first, clipboard fallback · `"clipboard"` = always copy · `"terminal"` = always use terminal |
-| `codebeam.rememberTerminalChoice` | `true` | Remember your terminal pick so you're asked once, not every time |
-| `codebeam.askForPrompt` | `true` | Ask for an optional instruction to send with the code |
-| `codebeam.agentStartDelayMs` | `2000` | Wait after launching an agent before pasting (lets its UI start) |
-| `codebeam.agentCommands` | `{}` | Override launch commands, e.g. `{ "copilot": "gh copilot" }` |
-| `codebeam.defaultBrowser` | `"ask"` | Browser AI for "Send to Browser AI": `"ask"` = picker · `"last"` = reuse last pick · `"chatgpt"`/`"claude"`/`"gemini"`/`"deepseek"` = jump straight there |
-| `codebeam.rememberBrowserChoice` | `true` | Remember your browser pick for `"last"` mode |
-| `codebeam.browserUrls` | `{}` | Override chat URLs, e.g. `{ "deepseek": "https://chat.deepseek.com/" }` |
+| `selectbeam.defaultTarget` | `"auto"` | `"auto"` = terminal first, clipboard fallback · `"clipboard"` = always copy · `"terminal"` = always use terminal |
+| `selectbeam.rememberTerminalChoice` | `true` | Remember your terminal pick so you're asked once, not every time |
+| `selectbeam.askForPrompt` | `true` | Ask for an optional instruction to send with the code |
+| `selectbeam.agentStartDelayMs` | `2000` | Wait after launching an agent before pasting (lets its UI start) |
+| `selectbeam.agentCommands` | `{}` | Override launch commands, e.g. `{ "copilot": "gh copilot" }` |
+| `selectbeam.defaultBrowser` | `"ask"` | Browser AI for "Send to Browser AI": `"ask"` = picker · `"last"` = reuse last pick · `"chatgpt"`/`"claude"`/`"gemini"`/`"deepseek"` = jump straight there |
+| `selectbeam.rememberBrowserChoice` | `true` | Remember your browser pick for `"last"` mode |
+| `selectbeam.browserUrls` | `{}` | Override chat URLs, e.g. `{ "deepseek": "https://chat.deepseek.com/" }` |
 
 ## Commands
 
 | Command | Shortcut | What it does |
 |---|---|---|
-| CodeBeam: Send Selection to AI | `Ctrl+Alt+Shift+A` | Format + send to terminal agent (or pick a browser AI from the same picker) |
-| CodeBeam: Send Selection to Browser AI (ChatGPT / Claude / Gemini / DeepSeek) | — (palette + right-click) | Copy code + open the chat site — paste once with `Ctrl+V` there |
-| CodeBeam: Choose Send Target | — (palette only) | Re-pick target / reset to Auto / clipboard-only |
+| SelectBeam: Send Selection to AI | `Ctrl+Alt+Shift+A` | Format + send to terminal agent (or pick a browser AI from the same picker) |
+| SelectBeam: Send Selection to Browser AI (ChatGPT / Claude / Gemini / DeepSeek) | — (palette + right-click) | Copy code + open the chat site — paste once with `Ctrl+V` there |
+| SelectBeam: Choose Send Target | — (palette only) | Re-pick target / reset to Auto / clipboard-only |
 
 ## Troubleshooting
 
 **`[DEP0169] url.parse() ... Use the WHATWG URL API instead` in the Debug Console**
-Harmless noise from VS Code's own extension host — not from CodeBeam
+Harmless noise from VS Code's own extension host — not from SelectBeam
 (our code never calls `url.parse()`). It changes nothing about how the
 extension runs. This repo already sets `NODE_NO_WARNINGS=1` in
 `.vscode/launch.json` so you won't see it when pressing F5. If you still
@@ -94,7 +94,7 @@ bundled Node runtime.
 
 **Terminal fills with `bquote>` lines after sending**
 You pasted a code fence into a plain shell (old behavior). Current
-CodeBeam asks before pasting into an unknown terminal. If you're ever
+SelectBeam asks before pasting into an unknown terminal. If you're ever
 stuck in `bquote>`, press `Ctrl+C` to get your prompt back, then make
 sure your AI agent (`opencode`, `claude`, …) is actually running in that
 terminal before sending.
@@ -102,7 +102,7 @@ terminal before sending.
 **Nothing happens when I press the shortcut**
 The shortcut only fires with an active selection (`when: editorHasSelection`).
 Highlight code first. If another extension stole the keybinding, rebind it
-in File → Preferences → Keyboard Shortcuts → search "CodeBeam".
+in File → Preferences → Keyboard Shortcuts → search "SelectBeam".
 
 **`vsce package` / install fails**
 Set the `publisher` field in `package.json` to your
@@ -111,7 +111,7 @@ then:
 ```bash
 bun run package
 npx @vscode/vsce package
-code --install-extension codebeam-0.0.2.vsix
+code --install-extension selectbeam-0.0.2.vsix
 ```
 
 **Commands not showing in a fresh clone**

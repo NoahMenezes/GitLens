@@ -1,4 +1,4 @@
-// esbuild bundler for the CodeBeam extension.
+// esbuild bundler for the SelectBeam extension.
 //
 // Why esbuild and not webpack?
 // - Much faster, zero-config, single file.

@@ -1,12 +1,12 @@
-// CodeBeam — terminal-first send with agent auto-launch + browser AI send.
+// SelectBeam — terminal-first send with agent auto-launch + browser AI send.
 //
 // Two send paths (both free, no API keys):
-// - TERMINAL: `codebeam.sendSelection` formats the selection as markdown,
+// - TERMINAL: `selectbeam.sendSelection` formats the selection as markdown,
 //   resolves a target terminal, then makes sure an AI CLI is running there
 //   BEFORE pasting. We never blind-paste a ``` fence into a plain shell
 //   (that is what caused the `bquote>` mess in zsh — backticks start command
 //   substitution, so the shell waits for a closing backtick).
-// - BROWSER: `codebeam.sendToBrowser` formats the same payload, copies it to
+// - BROWSER: `selectbeam.sendToBrowser` formats the same payload, copies it to
 //   the clipboard, then opens ChatGPT / Claude / Gemini / DeepSeek in your
 //   default browser via `vscode.env.openExternal()`. VS Code extensions
 //   CANNOT type into external browser tabs (sandbox), so the user presses
@@ -30,14 +30,14 @@ import * as vscode from "vscode";
 // ---------------------------------------------------------------------------
 
 // Terminal name -> remembered target terminal (avoid re-asking, multi-term).
-const KEY_REMEMBERED_TERMINAL = "codebeam.rememberedTerminalName";
+const KEY_REMEMBERED_TERMINAL = "selectbeam.rememberedTerminalName";
 // Session pin for clipboard-only (set via chooseTarget).
-const KEY_FORCE_CLIPBOARD = "codebeam.forceClipboard";
+const KEY_FORCE_CLIPBOARD = "selectbeam.forceClipboard";
 // Terminal name -> agent id we launched there (e.g. { "pwsh": "opencode" }).
 // Absence means "unknown / probably plain shell" -> we ask before pasting.
-const KEY_AGENT_MAP = "codebeam.terminalAgents";
+const KEY_AGENT_MAP = "selectbeam.terminalAgents";
 // Last browser AI picked (e.g. "chatgpt"). Used by `defaultBrowser: "last"`.
-const KEY_LAST_BROWSER = "codebeam.lastBrowserId";
+const KEY_LAST_BROWSER = "selectbeam.lastBrowserId";
 
 type DefaultTarget = "auto" | "clipboard" | "terminal";
 type DefaultBrowser = "ask" | "last" | "chatgpt" | "claude" | "gemini" | "deepseek";
@@ -46,7 +46,7 @@ interface AgentDef {
   id: string;
   label: string;
   description: string;
-  // Default launch command; overridable via `codebeam.agentCommands`.
+  // Default launch command; overridable via `selectbeam.agentCommands`.
   defaultCommand: string;
 }
 
@@ -65,7 +65,7 @@ interface BrowserDef {
   id: Exclude<DefaultBrowser, "ask" | "last">;
   label: string;
   description: string;
-  // Default chat URL; overridable via `codebeam.browserUrls`.
+  // Default chat URL; overridable via `selectbeam.browserUrls`.
   defaultUrl: string;
 }
 
@@ -82,15 +82,15 @@ const BROWSERS: BrowserDef[] = [
 export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      "codebeam.sendSelection",
+      "selectbeam.sendSelection",
       async (): Promise<void> => sendSelection(context)
     ),
     vscode.commands.registerCommand(
-      "codebeam.sendToBrowser",
+      "selectbeam.sendToBrowser",
       async (): Promise<void> => sendToBrowser(context)
     ),
     vscode.commands.registerCommand(
-      "codebeam.chooseTarget",
+      "selectbeam.chooseTarget",
       async (): Promise<void> => chooseTarget(context)
     )
   );
@@ -105,12 +105,12 @@ async function sendSelection(
   const editor: vscode.TextEditor | undefined =
     vscode.window.activeTextEditor;
   if (!editor) {
-    void vscode.window.showWarningMessage("CodeBeam: No active editor.");
+    void vscode.window.showWarningMessage("SelectBeam: No active editor.");
     return;
   }
   if (editor.selection.isEmpty) {
     void vscode.window.showWarningMessage(
-      "CodeBeam: Select some code first."
+      "SelectBeam: Select some code first."
     );
     return;
   }
@@ -119,7 +119,7 @@ async function sendSelection(
     buildPayload(editor);
 
   const config: vscode.WorkspaceConfiguration =
-    vscode.workspace.getConfiguration("codebeam");
+    vscode.workspace.getConfiguration("selectbeam");
   const defaultTarget: DefaultTarget = config.get<DefaultTarget>(
     "defaultTarget",
     "auto"
@@ -130,7 +130,7 @@ async function sendSelection(
   if (forceClipboard || defaultTarget === "clipboard") {
     await copyToClipboard(
       payload,
-      `$(clippy) CodeBeam: copied ${relativePath} (lines ${startLine}-${endLine}) — clipboard-only mode`
+      `$(clippy) SelectBeam: copied ${relativePath} (lines ${startLine}-${endLine}) — clipboard-only mode`
     );
     return;
   }
@@ -183,13 +183,13 @@ async function createAndLaunchFlow(
   endLine: number
 ): Promise<boolean> {
   const dest: DestinationPick | undefined = await pickDestination(
-    "CodeBeam: no terminal open — launch a terminal agent, open a browser AI, or clipboard"
+    "SelectBeam: no terminal open — launch a terminal agent, open a browser AI, or clipboard"
   );
   if (!dest) {
     return false;
   }
   if (dest.destKind === "clipboard") {
-    await copyToClipboard(payload, "$(clippy) CodeBeam: copied — no terminal open");
+    await copyToClipboard(payload, "$(clippy) SelectBeam: copied — no terminal open");
     return false;
   }
   if (dest.destKind === "browser" && dest.browser) {
@@ -205,7 +205,7 @@ async function createAndLaunchFlow(
     return false;
   }
   const terminal: vscode.Terminal = vscode.window.createTerminal(
-    `CodeBeam: ${agent.id}`
+    `SelectBeam: ${agent.id}`
   );
   await launchAgentAndPaste(
     context, terminal, agent, payload, relativePath, startLine, endLine
@@ -281,7 +281,7 @@ async function ensureAgentAndPaste(
 
   const picked: EnsPick | undefined =
     await vscode.window.showQuickPick<EnsPick>(items, {
-      placeHolder: `CodeBeam: "${target.name}" has no known AI agent — launch one or paste anyway?`,
+      placeHolder: `SelectBeam: "${target.name}" has no known AI agent — launch one or paste anyway?`,
     });
   if (!picked) {
     return;
@@ -290,7 +290,7 @@ async function ensureAgentAndPaste(
   if (picked.pickKind === "clipboard") {
     await copyToClipboard(
       payload,
-      "$(clippy) CodeBeam: copied — terminal left untouched"
+      "$(clippy) SelectBeam: copied — terminal left untouched"
     );
     return;
   }
@@ -338,7 +338,7 @@ async function launchAgentAndPaste(
   endLine: number
 ): Promise<void> {
   const config: vscode.WorkspaceConfiguration =
-    vscode.workspace.getConfiguration("codebeam");
+    vscode.workspace.getConfiguration("selectbeam");
   // Per-agent override, e.g. { "copilot": "gh copilot" }.
   const overrides: Record<string, string> =
     config.get<Record<string, string>>("agentCommands", {});
@@ -351,7 +351,7 @@ async function launchAgentAndPaste(
     terminal.sendText(command, true);
     await setAgentForTerminal(context, terminal.name, agent.id);
     vscode.window.setStatusBarMessage(
-      `$(sync~spin) CodeBeam: starting ${agent.id} in "${terminal.name}"…`,
+      `$(sync~spin) SelectBeam: starting ${agent.id} in "${terminal.name}"…`,
       delayMs
     );
     // Give the TUI time to boot before we type into its prompt.
@@ -363,7 +363,7 @@ async function launchAgentAndPaste(
   } catch {
     await copyToClipboard(
       payload,
-      "$(clippy) CodeBeam: could not launch agent — copied to clipboard instead"
+      "$(clippy) SelectBeam: could not launch agent — copied to clipboard instead"
     );
   }
 }
@@ -392,13 +392,13 @@ async function pasteWithOptionalPrompt(
     terminal.sendText(finalText, false);
     terminal.show();
     vscode.window.setStatusBarMessage(
-      `$(terminal) CodeBeam: pasted ${relativePath} (lines ${startLine}-${endLine}) ${agentTag}in "${terminal.name}" — review & press Enter`,
+      `$(terminal) SelectBeam: pasted ${relativePath} (lines ${startLine}-${endLine}) ${agentTag}in "${terminal.name}" — review & press Enter`,
       3000
     );
   } catch {
     await copyToClipboard(
       payload,
-      "$(clippy) CodeBeam: terminal paste failed — copied to clipboard instead"
+      "$(clippy) SelectBeam: terminal paste failed — copied to clipboard instead"
     );
   }
 }
@@ -415,7 +415,7 @@ async function withOptionalInstruction(
   payload: string
 ): Promise<string> {
   const config: vscode.WorkspaceConfiguration =
-    vscode.workspace.getConfiguration("codebeam");
+    vscode.workspace.getConfiguration("selectbeam");
   const askForPrompt: boolean = config.get<boolean>("askForPrompt", true);
 
   if (!askForPrompt) {
@@ -426,7 +426,7 @@ async function withOptionalInstruction(
   const instruction: string | undefined =
     await vscode.window.showInputBox({
       placeHolder: "Optional instruction for the AI (Enter = code only, Esc = code only)",
-      prompt: `CodeBeam: what should ${agentTag || "the AI"}do with ${relativePath} (lines ${startLine}-${endLine})?`,
+      prompt: `SelectBeam: what should ${agentTag || "the AI"}do with ${relativePath} (lines ${startLine}-${endLine})?`,
     });
   if (instruction && instruction.trim().length > 0) {
     return `${payload}\n\n${instruction.trim()}\n`;
@@ -475,8 +475,8 @@ async function pickDestination(
 }
 
 // ---------------------------------------------------------------------------
-// Browser command: `codebeam.sendToBrowser` — copy payload, open the chat
-// site, user pastes once. Honors `codebeam.defaultBrowser` ("ask" | "last"
+// Browser command: `selectbeam.sendToBrowser` — copy payload, open the chat
+// site, user pastes once. Honors `selectbeam.defaultBrowser` ("ask" | "last"
 // | specific id) and remembers the pick for "last" mode.
 // ---------------------------------------------------------------------------
 async function sendToBrowser(
@@ -485,12 +485,12 @@ async function sendToBrowser(
   const editor: vscode.TextEditor | undefined =
     vscode.window.activeTextEditor;
   if (!editor) {
-    void vscode.window.showWarningMessage("CodeBeam: No active editor.");
+    void vscode.window.showWarningMessage("SelectBeam: No active editor.");
     return;
   }
   if (editor.selection.isEmpty) {
     void vscode.window.showWarningMessage(
-      "CodeBeam: Select some code first."
+      "SelectBeam: Select some code first."
     );
     return;
   }
@@ -506,7 +506,7 @@ async function sendToBrowser(
   if (browser === "clipboard") {
     await copyToClipboard(
       payload,
-      `$(clippy) CodeBeam: copied ${relativePath} (lines ${startLine}-${endLine})`
+      `$(clippy) SelectBeam: copied ${relativePath} (lines ${startLine}-${endLine})`
     );
     return;
   }
@@ -521,7 +521,7 @@ async function resolveBrowser(
   context: vscode.ExtensionContext
 ): Promise<BrowserDef | "clipboard" | undefined> {
   const config: vscode.WorkspaceConfiguration =
-    vscode.workspace.getConfiguration("codebeam");
+    vscode.workspace.getConfiguration("selectbeam");
   const defaultBrowser: DefaultBrowser = config.get<DefaultBrowser>(
     "defaultBrowser",
     "ask"
@@ -572,7 +572,7 @@ async function resolveBrowser(
   ];
   const picked: BrowserPick | undefined =
     await vscode.window.showQuickPick<BrowserPick>(items, {
-      placeHolder: "CodeBeam: pick a browser AI (code is copied — paste once with Ctrl+V)",
+      placeHolder: "SelectBeam: pick a browser AI (code is copied — paste once with Ctrl+V)",
     });
   if (!picked) {
     return undefined;
@@ -589,7 +589,7 @@ async function rememberBrowser(
   browserId: string
 ): Promise<void> {
   const config: vscode.WorkspaceConfiguration =
-    vscode.workspace.getConfiguration("codebeam");
+    vscode.workspace.getConfiguration("selectbeam");
   const remember: boolean = config.get<boolean>(
     "rememberBrowserChoice",
     true
@@ -603,7 +603,7 @@ function getBrowserUrl(
   browser: BrowserDef
 ): string {
   const config: vscode.WorkspaceConfiguration =
-    vscode.workspace.getConfiguration("codebeam");
+    vscode.workspace.getConfiguration("selectbeam");
   const overrides: Record<string, string> =
     config.get<Record<string, string>>("browserUrls", {});
   const override: string | undefined = overrides[browser.id];
@@ -636,7 +636,7 @@ async function sendToBrowserTarget(
     const opened: boolean = await vscode.env.openExternal(uri);
     if (opened) {
       void vscode.window.showInformationMessage(
-        `CodeBeam: ${relativePath} (lines ${startLine}-${endLine}) copied — paste once (Ctrl+V) in ${browser.id}.`,
+        `SelectBeam: ${relativePath} (lines ${startLine}-${endLine}) copied — paste once (Ctrl+V) in ${browser.id}.`,
         "Copy again"
       ).then(async (action: string | undefined): Promise<void> => {
         if (action === "Copy again") {
@@ -644,18 +644,18 @@ async function sendToBrowserTarget(
         }
       });
       vscode.window.setStatusBarMessage(
-        `$(globe) CodeBeam: opened ${browser.id} — code is in your clipboard, press Ctrl+V there`,
+        `$(globe) SelectBeam: opened ${browser.id} — code is in your clipboard, press Ctrl+V there`,
         5000
       );
     } else {
       vscode.window.setStatusBarMessage(
-        "$(clippy) CodeBeam: browser would not open — code copied to clipboard instead",
+        "$(clippy) SelectBeam: browser would not open — code copied to clipboard instead",
         3000
       );
     }
   } catch {
     vscode.window.setStatusBarMessage(
-      "$(clippy) CodeBeam: could not open browser — code copied to clipboard instead",
+      "$(clippy) SelectBeam: could not open browser — code copied to clipboard instead",
       3000
     );
   }
@@ -673,7 +673,7 @@ async function resolveTargetTerminal(
     return undefined;
   }
   const config: vscode.WorkspaceConfiguration =
-    vscode.workspace.getConfiguration("codebeam");
+    vscode.workspace.getConfiguration("selectbeam");
   const remember: boolean = config.get<boolean>(
     "rememberTerminalChoice",
     true
@@ -709,7 +709,7 @@ async function resolveTargetTerminal(
       openTerminals.map((t: vscode.Terminal): string => t.name),
       {
         placeHolder:
-          "CodeBeam: pick the terminal (Claude Code, Copilot CLI, Codex, OpenCode, aider, …)",
+          "SelectBeam: pick the terminal (Claude Code, Copilot CLI, Codex, OpenCode, aider, …)",
       }
     );
   if (!pickedName) {
@@ -767,8 +767,8 @@ async function chooseTarget(
     await vscode.window.showQuickPick<TargetPick>(items, {
       placeHolder:
         openTerminals.length === 0
-          ? "CodeBeam: no terminals open — pick clipboard or auto"
-          : "CodeBeam: choose send target",
+          ? "SelectBeam: no terminals open — pick clipboard or auto"
+          : "SelectBeam: choose send target",
     });
   if (!picked) {
     return;
@@ -783,13 +783,13 @@ async function chooseTarget(
     await context.workspaceState.update(KEY_AGENT_MAP, undefined);
     await context.workspaceState.update(KEY_LAST_BROWSER, undefined);
     vscode.window.setStatusBarMessage(
-      "$(zap) CodeBeam: target reset to Auto",
+      "$(zap) SelectBeam: target reset to Auto",
       2000
     );
   } else if (picked.targetKind === "clipboard") {
     await context.workspaceState.update(KEY_FORCE_CLIPBOARD, true);
     vscode.window.setStatusBarMessage(
-      "$(clippy) CodeBeam: clipboard-only mode for this session",
+      "$(clippy) SelectBeam: clipboard-only mode for this session",
       2000
     );
   } else if (picked.targetKind === "terminal" && picked.terminalName) {
@@ -799,7 +799,7 @@ async function chooseTarget(
     );
     await context.workspaceState.update(KEY_FORCE_CLIPBOARD, false);
     vscode.window.setStatusBarMessage(
-      `$(terminal) CodeBeam: will send to "${picked.terminalName}"`,
+      `$(terminal) SelectBeam: will send to "${picked.terminalName}"`,
       2000
     );
   }

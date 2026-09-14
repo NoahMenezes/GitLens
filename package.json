@@ -1,6 +1,6 @@
 {
-  "name": "codebeam",
-  "displayName": "CodeBeam",
+  "name": "selectbeam",
+  "displayName": "SelectBeam",
   "description": "Beam your code straight to AI — no copy-paste, no tab-switching.",
   "version": "0.0.2",
   "publisher": "NoahMenezes",
@@ -29,28 +29,28 @@
   },
   "main": "./dist/extension.js",
   "activationEvents": [
-    "onCommand:codebeam.sendSelection",
-    "onCommand:codebeam.sendToBrowser",
-    "onCommand:codebeam.chooseTarget"
+    "onCommand:selectbeam.sendSelection",
+    "onCommand:selectbeam.sendToBrowser",
+    "onCommand:selectbeam.chooseTarget"
   ],
   "contributes": {
     "commands": [
       {
-        "command": "codebeam.sendSelection",
-        "title": "CodeBeam: Send Selection to AI"
+        "command": "selectbeam.sendSelection",
+        "title": "SelectBeam: Send Selection to AI"
       },
       {
-        "command": "codebeam.sendToBrowser",
-        "title": "CodeBeam: Send Selection to Browser AI (ChatGPT / Claude / Gemini / DeepSeek)"
+        "command": "selectbeam.sendToBrowser",
+        "title": "SelectBeam: Send Selection to Browser AI (ChatGPT / Claude / Gemini / DeepSeek)"
       },
       {
-        "command": "codebeam.chooseTarget",
-        "title": "CodeBeam: Choose Send Target"
+        "command": "selectbeam.chooseTarget",
+        "title": "SelectBeam: Choose Send Target"
       }
     ],
     "keybindings": [
       {
-        "command": "codebeam.sendSelection",
+        "command": "selectbeam.sendSelection",
         "key": "ctrl+alt+shift+a",
         "mac": "cmd+alt+shift+a",
         "when": "editorHasSelection"
@@ -59,58 +59,58 @@
     "menus": {
       "editor/context": [
         {
-          "command": "codebeam.sendSelection",
+          "command": "selectbeam.sendSelection",
           "when": "editorHasSelection",
           "group": "navigation"
         },
         {
-          "command": "codebeam.sendToBrowser",
+          "command": "selectbeam.sendToBrowser",
           "when": "editorHasSelection",
           "group": "navigation"
         }
       ]
     },
     "configuration": {
-      "title": "CodeBeam",
+      "title": "SelectBeam",
       "properties": {
-        "codebeam.defaultTarget": {
+        "selectbeam.defaultTarget": {
           "type": "string",
           "enum": ["auto", "clipboard", "terminal"],
           "default": "auto",
-          "description": "Where CodeBeam sends code. 'auto' tries the terminal first and falls back to the clipboard; 'clipboard' always copies; 'terminal' always requires a terminal and shows an error if none exists."
+          "description": "Where SelectBeam sends code. 'auto' tries the terminal first and falls back to the clipboard; 'clipboard' always copies; 'terminal' always requires a terminal and shows an error if none exists."
         },
-        "codebeam.rememberTerminalChoice": {
+        "selectbeam.rememberTerminalChoice": {
           "type": "boolean",
           "default": true,
           "description": "Remember the terminal picked in the quickpick for the rest of the session (stored in workspaceState) so you are not prompted every time."
         },
-        "codebeam.askForPrompt": {
+        "selectbeam.askForPrompt": {
           "type": "boolean",
           "default": true,
           "description": "After pasting code, ask for an optional instruction to append after the code block. Empty/Escape sends code only. The agent is never auto-submitted."
         },
-        "codebeam.agentStartDelayMs": {
+        "selectbeam.agentStartDelayMs": {
           "type": "number",
           "default": 2000,
           "description": "Milliseconds to wait after launching an AI CLI before pasting code, so the TUI has time to boot."
         },
-        "codebeam.agentCommands": {
+        "selectbeam.agentCommands": {
           "type": "object",
           "default": {},
           "description": "Override launch commands per agent id, e.g. { \"copilot\": \"gh copilot\" }. Keys: opencode, claude, codex, copilot, aider."
         },
-        "codebeam.defaultBrowser": {
+        "selectbeam.defaultBrowser": {
           "type": "string",
           "enum": ["ask", "last", "chatgpt", "claude", "gemini", "deepseek"],
           "default": "ask",
           "description": "Which browser AI to open for 'Send Selection to Browser AI'. 'ask' shows a picker every time; 'last' reuses your last browser pick; otherwise jumps straight to ChatGPT / Claude / Gemini / DeepSeek."
         },
-        "codebeam.rememberBrowserChoice": {
+        "selectbeam.rememberBrowserChoice": {
           "type": "boolean",
           "default": true,
           "description": "Remember the browser AI picked in the quickpick for 'last' mode (stored in workspaceState)."
         },
-        "codebeam.browserUrls": {
+        "selectbeam.browserUrls": {
           "type": "object",
           "default": {},
           "description": "Override browser AI URLs per id, e.g. { \"chatgpt\": \"https://chatgpt.com/\" }. Keys: chatgpt, claude, gemini, deepseek."
