@@ -22,7 +22,7 @@ export const KEY_BRIDGE_TOKEN = "selectbeam.bridgeToken";
 
 // --- Bridge limits ---------------------------------------------------------
 
-export const BRIDGE_VERSION = "0.0.4";
+export const BRIDGE_VERSION = "0.0.5";
 // Max queued pastes kept in memory (temporary, not persisted).
 export const MAX_PENDING = 20;
 // Max JSON body for bridge POSTs (2 MB — code selections are small).

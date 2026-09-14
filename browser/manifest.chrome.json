@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SelectBeam Bridge",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Reuses your linked AI chat tab for SelectBeam sends (no new-tab spam). Localhost only, no cloud.",
   "permissions": ["storage", "tabs"],
   "host_permissions": [

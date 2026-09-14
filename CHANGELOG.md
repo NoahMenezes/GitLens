@@ -2,6 +2,18 @@
 
 All changes to SelectBeam will be listed here.
 
+## [0.0.5] — 2026-09-15
+
+- Fixed companion paste: the chat box fill is now verified (text must
+  actually appear), with three strategies in order — editor-native
+  `insertText`, native value setter, append + input event — instead of one
+  blind attempt. Still never auto-submits.
+- Failed pastes retry each poll (~20s budget), then fall back to a manual
+  `Ctrl+V` / `Cmd+V` toast. Nothing is lost: VS Code always copies first.
+- New on-page diagnostics: amber “not linked” vs green “linked ✓” badge
+  (click = fill now), plus toasts when code arrives but the editor isn't
+  ready. Editor re-poll on DOM change and tab focus for SPA navigation.
+
 ## [0.0.4] — 2026-09-15
 
 - Split `src/extension.ts` (1342 lines) into modules: `types`,

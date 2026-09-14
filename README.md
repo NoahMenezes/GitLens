@@ -207,6 +207,14 @@ the clipboard. If needed, press “Copy again” in the VS Code notification.
 With the companion linked, wait ~2 seconds for auto-fill; if the site
 redesigned its input, only `browser/content.js` selectors need updating.
 
+**Tab is linked but never auto-fills.**
+Check the badge on the page: amber “not linked” means the token is
+missing — redo popup → Save → Link. Green but empty means the fill failed:
+the page tells you via toast, and after ~20s it asks for one manual paste.
+Reload the temporary add-on in `about:debugging` (it may have unloaded),
+then send again. Last resort: report the site + what the toast said —
+only the `SELECTORS` table in `browser/content.js` needs the new hook.
+
 **My terminal shows `bquote>` lines.**
 That means code was put into a plain shell instead of an AI tool.
 Press `Ctrl+C` to get your prompt back, then make sure your AI tool
