@@ -4,8 +4,7 @@
   "version": "0.0.3",
   "description": "Reuses your linked AI chat tab for SelectBeam sends (no new-tab spam). Localhost only, no cloud.",
   "icons": {
-    "48": "icon.png",
-    "96": "icon.png"
+    "128": "icon.png"
   },
   "permissions": ["storage", "tabs"],
   "host_permissions": [
@@ -43,7 +42,14 @@
   },
   "browser_specific_settings": {
     "gecko": {
-      "strict_min_version": "109.0"
+      "id": "selectbeam-bridge@noahmenezes.github.io",
+      "data_collection_permissions": {
+        "required": ["none"]
+      },
+      "strict_min_version": "140.0"
+    },
+    "gecko_android": {
+      "strict_min_version": "142.0"
     }
   }
 }
