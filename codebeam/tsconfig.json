@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    // Target modern Node (VS Code's extension host) + CommonJS modules.
+    "module": "commonjs",
+    "target": "ES2022",
+    "moduleResolution": "node",
+    "lib": ["ES2022"],
+    // esbuild bundles from src/ — tsc only type-checks (see check-types script).
+    "outDir": "dist",
+    "rootDir": "src",
+    "sourceMap": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}

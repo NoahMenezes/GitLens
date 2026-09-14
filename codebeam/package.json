@@ -1,0 +1,67 @@
+{
+  "name": "codebeam",
+  "displayName": "CodeBeam",
+  "description": "Beam your code straight to AI — no copy-paste, no tab-switching.",
+  "version": "0.0.1",
+  "publisher": "your-publisher-name",
+  "license": "MIT",
+  "keywords": [
+    "ai",
+    "chatgpt",
+    "claude",
+    "copilot",
+    "clipboard",
+    "productivity",
+    "context"
+  ],
+  "categories": [
+    "AI",
+    "Other"
+  ],
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onCommand:codebeam.sendSelection"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "codebeam.sendSelection",
+        "title": "CodeBeam: Send Selection to AI"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "codebeam.sendSelection",
+        "key": "ctrl+alt+a",
+        "mac": "cmd+alt+a",
+        "when": "editorHasSelection"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "codebeam.sendSelection",
+          "when": "editorHasSelection",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "bun run package",
+    "compile": "bun ./esbuild.js",
+    "watch": "bun ./esbuild.js --watch",
+    "package": "bun ./esbuild.js --production",
+    "check-types": "tsc --noEmit",
+    "test": "echo \"No tests yet (V1)\" && exit 0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.21.0",
+    "typescript": "^5.3.3"
+  }
+}

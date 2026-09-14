@@ -1,0 +1,17 @@
+{
+  // Launches a sandboxed VS Code window ("Extension Development Host")
+  // with CodeBeam loaded from this folder. Press F5 to start.
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run Extension",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
+      // Pick up sourcemaps from the esbuild bundle for breakpoints.
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      // Runs the default build task (bun run watch) before launching.
+      "preLaunchTask": "${defaultBuildTask}"
+    }
+  ]
+}
