@@ -1,7 +1,8 @@
 // SelectBeam — browser send path: one-tap, same-tab, every provider.
 // Clipboard is ALWAYS written first so nothing is ever lost. Every send is
 // ALSO queued on the bridge, so even a first-ever send to a new AI
-// auto-fills when its chat loads. SelectBeam never auto-submits.
+// auto-fills when its chat loads. First send opens a new chat; from the
+// second send on you choose Last used tab vs New chat. Never auto-submits.
 
 import * as vscode from "vscode";
 import { BROWSERS, findBrowser } from "./constants";
@@ -20,6 +21,7 @@ import {
   ageLabel,
   getLastBrowserId,
   getLiveTab,
+  removeLiveTab,
   setLastBrowserId,
   setLiveTab,
 } from "./state";
@@ -154,60 +156,103 @@ export async function sendToBrowserTarget(
 
   await vscode.env.clipboard.writeText(finalText);
 
-  // ALWAYS queue when we own the bridge — even with no live tab yet. The
-  // companion claims it on first poll, so first-ever sends auto-fill too.
   const canQueue = isBridgeOwner() && getReuseBrowserTab();
-  if (canQueue) {
-    queuePasteForBrowser(browser.id, finalText, fileRef);
-  }
-
-  // 1) Fresh live tab -> same-tab reuse, no new tab. Quiet on purpose:
-  // the fill confirmation from the tab itself pops the message in VS Code.
   const live = getLiveTab(context, browser.id);
+
+  // Second send onwards with a fresh tab: YOU choose — refill the last
+  // used tab, or open a brand-new chat. First send (no live tab) always
+  // opens a new chat, exactly like before.
   if (live && canQueue) {
-    vscode.window.setStatusBarMessage(
-      `$(globe) SelectBeam: sent ${fileRef} to ${browser.id} tab "${live.title || live.url}" (${ageLabel(live.updatedAt)}) — filling…`,
-      5000
-    );
+    interface ReusePick extends vscode.QuickPickItem {
+      choice: "last" | "new";
+    }
+    const pick: ReusePick | undefined =
+      await vscode.window.showQuickPick<ReusePick>(
+        [
+          {
+            label: "$(history) Last used tab",
+            description: `"${live.title || live.url}" (${ageLabel(live.updatedAt)}) — refill it`,
+            choice: "last",
+          },
+          {
+            label: "$(plus) New chat",
+            description: `Open a fresh ${browser.id} chat and fill it there`,
+            choice: "new",
+          },
+        ],
+        {
+          placeHolder: `SelectBeam: refill your last ${browser.id} tab, or open a new chat?`,
+        }
+      );
+    if (!pick) {
+      return; // Esc — clipboard still has the code, nothing queued
+    }
+    if (pick.choice === "last") {
+      queuePasteForBrowser(browser.id, finalText, fileRef);
+      // Quiet on purpose: the fill confirmation from the tab itself pops
+      // the message in VS Code.
+      vscode.window.setStatusBarMessage(
+        `$(globe) SelectBeam: sent ${fileRef} to ${browser.id} tab — filling…`,
+        5000
+      );
+      return;
+    }
+    // New chat: forget the old tab so the fresh one registers itself,
+    // queue for it, then open it.
+    await removeLiveTab(context, browser.id);
+    queuePasteForBrowser(browser.id, finalText, fileRef);
+    await openFreshChat("new");
     return;
   }
 
-  // 2) No live tab (or bridge off): open the chat. If queued above, the new
-  // tab auto-fills when its editor loads — no manual paste needed.
-  await setLiveTab(context, browser.id, getBrowserUrl(browser), "", true);
-  const url: string = getBrowserUrl(browser);
-  try {
-    const uri: vscode.Uri = vscode.Uri.parse(url);
-    const opened: boolean = await vscode.env.openExternal(uri);
-    if (opened) {
-      const hint = canQueue
-        ? `Opening ${browser.id} — code fills itself when the chat loads.`
-        : `Bridge is ${isBridgeOwner() ? "off" : "owned by another window"} — opened ${browser.id} normally. Press ${pasteHint()} there.`;
-      void vscode.window.showInformationMessage(
-        `SelectBeam: ${fileRef} copied — ${hint}`,
-        "Copy again",
-        "Bridge status"
-      ).then(async (action: string | undefined): Promise<void> => {
-        if (action === "Copy again") {
-          await vscode.env.clipboard.writeText(finalText);
-        } else if (action === "Bridge status") {
-          await showBridgeStatus(context);
-        }
-      });
+  // First send (or bridge off): open the chat. Queued when possible, so
+  // the new tab auto-fills when its editor loads — no manual paste needed.
+  if (canQueue) {
+    queuePasteForBrowser(browser.id, finalText, fileRef);
+  }
+  await openFreshChat(live ? "bridge-off" : "first");
+
+  // Opens a new chat URL. Shared by first-send, explicit new-chat, and
+  // bridge-off fallbacks — only the hint differs.
+  async function openFreshChat(reason: "first" | "new" | "bridge-off"): Promise<void> {
+    await setLiveTab(context, browser.id, getBrowserUrl(browser), "", true);
+    const url: string = getBrowserUrl(browser);
+    try {
+      const uri: vscode.Uri = vscode.Uri.parse(url);
+      const opened: boolean = await vscode.env.openExternal(uri);
+      if (opened) {
+        const hint =
+          reason === "new"
+            ? `Opening a fresh ${browser.id} chat — fills when it loads. Your old tab stays open.`
+            : reason === "first"
+              ? `Opening ${browser.id} — code fills itself when the chat loads.`
+              : `Bridge is ${isBridgeOwner() ? "off" : "owned by another window"} — opened ${browser.id} normally. Press ${pasteHint()} there.`;
+        void vscode.window.showInformationMessage(
+          `SelectBeam: ${fileRef} copied — ${hint}`,
+          "Copy again",
+          "Bridge status"
+        ).then(async (action: string | undefined): Promise<void> => {
+          if (action === "Copy again") {
+            await vscode.env.clipboard.writeText(finalText);
+          } else if (action === "Bridge status") {
+            await showBridgeStatus(context);
+          }
+        });
+        vscode.window.setStatusBarMessage(
+          `$(globe) SelectBeam: opened ${browser.id} — ${reason === "bridge-off" ? `code is in your clipboard, press ${pasteHint()} there` : "auto-fill queued"}`,
+          5000
+        );
+      } else {
+        vscode.window.setStatusBarMessage(
+          "$(clippy) SelectBeam: browser would not open — code copied to clipboard instead",
+          3000
+        );
+      }
+    } catch {
       vscode.window.setStatusBarMessage(
-        `$(globe) SelectBeam: opened ${browser.id} — ${canQueue ? "auto-fill queued" : `code is in your clipboard, press ${pasteHint()} there`}`,
-        5000
-      );
-    } else {
-      vscode.window.setStatusBarMessage(
-        "$(clippy) SelectBeam: browser would not open — code copied to clipboard instead",
+        "$(clippy) SelectBeam: could not open browser — code copied to clipboard instead",
         3000
       );
     }
-  } catch {
-    vscode.window.setStatusBarMessage(
-      "$(clippy) SelectBeam: could not open browser — code copied to clipboard instead",
-      3000
-    );
   }
 }

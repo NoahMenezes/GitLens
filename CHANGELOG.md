@@ -64,6 +64,9 @@ All changes to SelectBeam will be listed here.
 - Fill confirmation back into VS Code (`POST /filled`): the moment code
   lands in the chat box you get a "pasted into your tab" message and the
   tab is re-remembered for the next send.
+- Last used vs New chat: first send opens a new chat; from the second send
+  on you pick **Last used tab** (refill) or **New chat** (fresh start,
+  old tab forgotten at once) — for every model.
 
 ## [0.0.2] — 2026-09-14
 

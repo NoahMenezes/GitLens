@@ -72,7 +72,8 @@ The shortcut only works when text is highlighted. It is 3 keys on purpose
 - Browser with companion: your code is sent to the same tab and
   auto-fills there in ~2 seconds — no questions, no pasting. Still review
   it yourself — SelectBeam never presses Enter for you. First-ever send
-  to a new AI opens its chat and auto-fills when it loads.
+  to a new AI opens its chat and auto-fills when it loads. Second send
+  onwards you choose: **Last used tab** or **New chat**.
 
 ## Mac keys
 
