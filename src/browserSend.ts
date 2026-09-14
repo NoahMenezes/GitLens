@@ -161,19 +161,12 @@ export async function sendToBrowserTarget(
     queuePasteForBrowser(browser.id, finalText, fileRef);
   }
 
-  // 1) Fresh live tab -> same-tab reuse, no new tab.
+  // 1) Fresh live tab -> same-tab reuse, no new tab. Quiet on purpose:
+  // the fill confirmation from the tab itself pops the message in VS Code.
   const live = getLiveTab(context, browser.id);
   if (live && canQueue) {
-    void vscode.window.showInformationMessage(
-      `SelectBeam: ${fileRef} sent to your open ${browser.id} tab "${live.title || live.url}" (${ageLabel(live.updatedAt)}) — fills in ~2s.`,
-      "Copy again"
-    ).then(async (action: string | undefined): Promise<void> => {
-      if (action === "Copy again") {
-        await vscode.env.clipboard.writeText(finalText);
-      }
-    });
     vscode.window.setStatusBarMessage(
-      `$(globe) SelectBeam: reusing ${browser.id} tab — no new tab opened`,
+      `$(globe) SelectBeam: sent ${fileRef} to ${browser.id} tab "${live.title || live.url}" (${ageLabel(live.updatedAt)}) — filling…`,
       5000
     );
     return;

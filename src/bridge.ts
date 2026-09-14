@@ -13,6 +13,10 @@
 // - POST /tabs   {provider,url,title} -> remembers live tab (heartbeat)
 // - GET  /pending?provider=   -> queued pastes for that provider
 // - POST /ack    {id}         -> companion confirms pickup, we drop it
+// - POST /filled {provider,fileRef} -> companion confirms the chat box was
+//   filled: we refresh the tab memory and message YOU back in VS Code.
+// - POST /bye    {provider}   -> tab closed/navigated away: forget it now
+//   so the next send opens a FRESH chat instead of a dead tab.
 // - GET  /tabs                -> live-tab map (popup status)
 // - POST /queue  {provider,text,fileRef} -> forward a paste (multi-window)
 
@@ -35,7 +39,9 @@ import { pasteHint, shortcutHint } from "./platform";
 import {
   ageLabel,
   getLiveTabs,
+  removeLiveTab,
   setLiveTab,
+  touchLiveTab,
 } from "./state";
 import type { PendingPaste } from "./types";
 
@@ -207,6 +213,44 @@ export async function startBridgeServer(
         if (i >= 0) {
           pendingQueue.splice(i, 1);
         }
+        sendJson(res, 200, { ok: true });
+        return;
+      }
+      // POST /filled { provider, fileRef } — the chat box was actually
+      // filled. Refresh the tab memory (this tab is definitely the one)
+      // and message back into VS Code so you know it landed.
+      if (req.method === "POST" && url.pathname === "/filled") {
+        const body = (await readJsonBody(req)) as {
+          provider?: string; fileRef?: string;
+        };
+        if (!body.provider || !isKnownProvider(body.provider)) {
+          sendJson(res, 400, { ok: false, error: "unknown provider" });
+          return;
+        }
+        await touchLiveTab(context, body.provider);
+        const ref =
+          typeof body.fileRef === "string" && body.fileRef.length > 0
+            ? ` (${body.fileRef})`
+            : "";
+        void vscode.window.showInformationMessage(
+          `SelectBeam: pasted into your ${body.provider} tab${ref} — review & submit there.`
+        );
+        vscode.window.setStatusBarMessage(
+          `$(check) SelectBeam: ${body.provider} tab filled${ref}`,
+          5000
+        );
+        sendJson(res, 200, { ok: true });
+        return;
+      }
+      // POST /bye { provider } — tab closed or navigated away from the
+      // chat. Forget it immediately so the next send opens a fresh chat.
+      if (req.method === "POST" && url.pathname === "/bye") {
+        const body = (await readJsonBody(req)) as { provider?: string };
+        if (!body.provider || !isKnownProvider(body.provider)) {
+          sendJson(res, 400, { ok: false, error: "unknown provider" });
+          return;
+        }
+        await removeLiveTab(context, body.provider);
         sendJson(res, 200, { ok: true });
         return;
       }

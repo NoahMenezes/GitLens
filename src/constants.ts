@@ -26,6 +26,11 @@ export const EXT_ORIGIN_PREFIXES = ["moz-extension://", "chrome-extension://"];
 export const BRIDGE_VERSION = "0.0.3";
 // Max queued pastes kept in memory (temporary, not persisted).
 export const MAX_PENDING = 20;
+// Reuse window: a tab only counts as "the same tab" if it heartbeated
+// within the last 90s. Open tabs beat every 15s, so a live tab always
+// passes; a closed tab stops beating and we open a FRESH chat instead of
+// sending into the void. The TTL setting remains as the outer bound.
+export const LIVE_REUSE_WINDOW_MS = 90_000;
 // Max JSON body for bridge POSTs (2 MB — code selections are small).
 export const MAX_BODY_BYTES = 2 * 1024 * 1024;
 // Max queued paste text (500 KB guard on the /queue forward path).

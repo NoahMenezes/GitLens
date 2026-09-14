@@ -58,6 +58,12 @@ All changes to SelectBeam will be listed here.
   `defaultBrowser` default is now `"last"` — ask once, then automatic.
 - New providers Grok (grok.com, x.com/i/grok) and Copilot
   (copilot.microsoft.com): same flow, same selectors machinery.
+- Same-tab memory is now exact: closing/navigating away tells VS Code at
+  once (`POST /bye`), and only tabs heartbeated in the last 90s are reused
+  — a dead tab never swallows a send, a fresh chat opens instead.
+- Fill confirmation back into VS Code (`POST /filled`): the moment code
+  lands in the chat box you get a "pasted into your tab" message and the
+  tab is re-remembered for the next send.
 
 ## [0.0.2] — 2026-09-14
 

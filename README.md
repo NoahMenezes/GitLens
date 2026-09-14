@@ -155,7 +155,8 @@ Notes:
 - The bridge is `http://127.0.0.1:51337` only. No data leaves your
   machine. Websites are locked out by extension-origin check, so there is
   no password to manage. Endpoints: `GET /status`, `POST /tabs`,
-  `GET /pending`, `POST /ack`, `GET /tabs`, `POST /queue`.
+  `GET /pending`, `POST /ack`, `POST /filled`, `POST /bye`, `GET /tabs`,
+  `POST /queue`.
 - Keep one VS Code window owning the bridge. A second window shows a
   warning and falls back to copy+open.
 
@@ -192,10 +193,10 @@ change it under File → Preferences → Keyboard Shortcuts, search
 
 **The browser opened a new tab every time.**
 That means no tab is linked yet — the companion may have unloaded
-(temporary add-ons unload on Firefox restart) or the chat was closed.
+(temporary add-ons unload on Firefox restart) or the chat was closed
+(closing a chat forgets it at once, so the next send opens fresh).
 Reload in `about:debugging`, keep the chat open, send again. Check
-**Show Browser Bridge Status** for live tabs. Live tabs expire after
-`liveTabTTLMinutes`.
+**Show Browser Bridge Status** for live tabs.
 
 **Page badge says “VS Code bridge off?”.**
 Make sure VS Code is open (the bridge runs inside the extension),

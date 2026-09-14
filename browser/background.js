@@ -21,6 +21,10 @@ function getApi() {
 
 const api = getApi();
 
+// tabId -> provider for tabs that heartbeated. Lets onRemoved tell VS Code
+// exactly which chat closed.
+const tabProviders = {};
+
 async function getPort() {
   try {
     const got = await api.storage.local.get({ port: DEFAULT_PORT });
@@ -55,13 +59,21 @@ async function getJSON(port, path) {
 }
 
 // Content script says: "I am this chat tab" -> register heartbeat.
-async function heartbeat(msg) {
+// sender.tab.id lets us notice when THAT tab closes (see onRemoved).
+async function heartbeat(msg, sender) {
   const port = await getPort();
   await postJSON(port, "/tabs", {
     provider: msg.provider,
     url: String(msg.url || "").slice(0, 500),
     title: String(msg.title || "").slice(0, 200)
   });
+  try {
+    if (sender && sender.tab && typeof sender.tab.id === "number") {
+      tabProviders[sender.tab.id] = msg.provider;
+    }
+  } catch {
+    // tracking is best-effort only
+  }
   return { linked: true };
 }
 
@@ -72,10 +84,45 @@ async function poll(msg) {
   return { items: (data && data.items) || [] };
 }
 
-// Content script says: "filled it" -> drop from queue.
+// Content script says: "filled it" -> drop from queue + tell VS Code the
+// paste landed (server pops the "pasted into your tab" message there).
 async function ack(msg) {
   const port = await getPort();
   await postJSON(port, "/ack", { id: msg.id });
+  return { ok: true };
+}
+
+// Content script says: "it is IN the chat box now" -> VS Code messages you.
+async function filled(msg) {
+  const port = await getPort();
+  try {
+    await postJSON(port, "/filled", {
+      provider: msg.provider,
+      fileRef: String(msg.fileRef || "").slice(0, 200)
+    });
+  } catch {
+    // VS Code closed mid-fill — the code is still in the chat box.
+  }
+  return { ok: true };
+}
+
+// Tab closed or navigated away -> VS Code forgets it NOW so the next send
+// opens a FRESH chat instead of reusing a dead entry.
+async function bye(msg, sender, tabId) {
+  const port = await getPort();
+  var provider = msg && msg.provider;
+  if (!provider && typeof tabId === "number") {
+    provider = tabProviders[tabId];
+    delete tabProviders[tabId];
+  }
+  if (!provider) {
+    return { ok: false };
+  }
+  try {
+    await postJSON(port, "/bye", { provider });
+  } catch {
+    // bridge down — staleness window covers it
+  }
   return { ok: true };
 }
 
@@ -93,7 +140,7 @@ async function status() {
   return { port, health, liveTabs };
 }
 
-const handlers = { hb: heartbeat, poll, ack, status };
+const handlers = { hb: heartbeat, poll, ack, filled, bye, status };
 
 function onMessage(msg, sender, sendResponse) {
   const fn = msg && handlers[msg.type];
@@ -112,6 +159,20 @@ try {
   api.runtime.onMessage.addListener(onMessage);
 } catch {
   // Unsupported environment — content scripts degrade to manual paste.
+}
+
+// A chat tab closed (or crashed): tell VS Code immediately so the next
+// send opens a FRESH chat instead of reusing the dead tab.
+try {
+  if (api.tabs && api.tabs.onRemoved) {
+    api.tabs.onRemoved.addListener((tabId) => {
+      if (tabProviders[tabId]) {
+        bye(null, null, tabId);
+      }
+    });
+  }
+} catch {
+  // tabs events unavailable — heartbeat window covers it
 }
 
 try {

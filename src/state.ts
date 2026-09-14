@@ -10,6 +10,7 @@ import {
   KEY_LAST_BROWSER,
   KEY_LIVE_TABS,
   KEY_REMEMBERED_TERMINAL,
+  LIVE_REUSE_WINDOW_MS,
 } from "./constants";
 import { getLiveTabTTLMinutes } from "./config";
 import type { LiveTab } from "./types";
@@ -112,8 +113,12 @@ export function getLiveTab(
   if (!tab.title) {
     return undefined;
   }
-  const ttlMin = Math.max(1, getLiveTabTTLMinutes());
-  if (Date.now() - tab.updatedAt >= ttlMin * 60_000) {
+  // Freshness: open tabs heartbeat every 15s, so anything older than the
+  // reuse window is a closed/navigated-away tab — open a fresh chat instead
+  // of sending into a dead tab. TTL setting stays as the outer bound.
+  const ttlMs = Math.max(1, getLiveTabTTLMinutes()) * 60_000;
+  const windowMs = Math.min(ttlMs, LIVE_REUSE_WINDOW_MS);
+  if (Date.now() - tab.updatedAt >= windowMs) {
     return undefined;
   }
   return tab;
@@ -140,6 +145,33 @@ export async function clearLiveTabs(
   context: vscode.ExtensionContext
 ): Promise<void> {
   await context.globalState.update(KEY_LIVE_TABS, {});
+}
+
+// A tab closed/navigated away: forget it now so the next send opens a
+// FRESH chat instead of reusing a dead entry until the window lapses.
+export async function removeLiveTab(
+  context: vscode.ExtensionContext,
+  provider: string
+): Promise<void> {
+  const all = { ...getLiveTabs(context) };
+  if (all[provider]) {
+    delete all[provider];
+    await context.globalState.update(KEY_LIVE_TABS, all);
+  }
+}
+
+// A fill was confirmed in the tab: refresh its heartbeat so it stays the
+// remembered tab for the next send.
+export async function touchLiveTab(
+  context: vscode.ExtensionContext,
+  provider: string
+): Promise<void> {
+  const all = { ...getLiveTabs(context) };
+  const prev = all[provider];
+  if (prev) {
+    all[provider] = { ...prev, updatedAt: Date.now() };
+    await context.globalState.update(KEY_LIVE_TABS, all);
+  }
 }
 
 export function ageLabel(updatedAt: number): string {

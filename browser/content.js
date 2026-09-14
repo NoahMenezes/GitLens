@@ -423,6 +423,9 @@
         delete attempts[item.id];
         await ack(item.id);
         toast("SelectBeam filled code (" + (item.fileRef || PROVIDER) + ") — review & submit yourself.");
+        // Tell VS Code it landed: it refreshes the remembered tab and
+        // messages you back there. Best-effort — the code is in regardless.
+        void sendMsg({ type: "filled", provider: PROVIDER, fileRef: item.fileRef || "" });
       } else {
         attempts[item.id] = (attempts[item.id] || 0) + 1;
         if (attempts[item.id] > MAX_ATTEMPTS) {
@@ -475,4 +478,14 @@
     // observer unsupported — intervals still cover it
   }
   window.addEventListener("focus", pollNow);
+  // Navigating away from the chat (or closing the tab): tell VS Code to
+  // forget this tab NOW, so the next send opens a fresh chat. The
+  // background's onRemoved is the primary path; this is the backup.
+  window.addEventListener("pagehide", function () {
+    try {
+      sendMsg({ type: "bye", provider: PROVIDER });
+    } catch {
+      // unloading — nothing more we can do
+    }
+  });
 })();
