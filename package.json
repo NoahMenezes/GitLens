@@ -2,9 +2,13 @@
   "name": "codebeam",
   "displayName": "CodeBeam",
   "description": "Beam your code straight to AI — no copy-paste, no tab-switching.",
-  "version": "0.0.1",
-  "publisher": "your-publisher-name",
+  "version": "0.0.2",
+  "publisher": "NoahMenezes",
   "license": "MIT",
+  "icon": "icon.png",
+  "author": {
+    "name": "Noah Menezes"
+  },
   "keywords": [
     "ai",
     "chatgpt",
