@@ -1,13 +1,11 @@
 // SelectBeam — all vscode state (workspace + global) in one place.
-// workspaceState = per-folder memory (terminals). globalState = machine
-// memory (bridge token + live tabs, so the companion popup works across
-// windows).
+// workspaceState = per-folder memory (terminals, last browser pick).
+// globalState = machine memory (live tabs, so the companion popup works
+// across windows).
 
 import * as vscode from "vscode";
-import * as crypto from "crypto";
 import {
   KEY_AGENT_MAP,
-  KEY_BRIDGE_TOKEN,
   KEY_FORCE_CLIPBOARD,
   KEY_LAST_BROWSER,
   KEY_LIVE_TABS,
@@ -150,17 +148,4 @@ export function ageLabel(updatedAt: number): string {
     return `${s}s ago`;
   }
   return `${Math.round(s / 60)}m ago`;
-}
-
-// --- Bridge token ----------------------------------------------------------
-
-export async function getOrCreateBridgeToken(
-  context: vscode.ExtensionContext
-): Promise<string> {
-  let token = context.globalState.get<string | undefined>(KEY_BRIDGE_TOKEN);
-  if (!token) {
-    token = crypto.randomBytes(16).toString("hex");
-    await context.globalState.update(KEY_BRIDGE_TOKEN, token);
-  }
-  return token;
 }

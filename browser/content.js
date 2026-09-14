@@ -1,17 +1,13 @@
-// SelectBeam Bridge — content script (one file, all 4 providers).
-// Runs on chatgpt.com, claude.ai, gemini.google.com, chat.deepseek.com.
-// Two jobs, both localhost-only:
+// SelectBeam Bridge — content script (one file, all providers).
+// Runs on ChatGPT, Claude, Gemini, DeepSeek, Grok, Copilot chat pages.
+// It NEVER talks to the bridge directly: all networking goes through the
+// background page (whose requests carry the extension Origin the server
+// trusts). This script only finds chat boxes, pastes verifiably, and
+// reports. Zero setup — no token, no pairing.
 //
-//   browser -> vscode: heartbeat POST /tabs { token, provider, url, title }
-//     so VS Code remembers WHICH tab to reuse (temporary memory, TTL 60m).
-//   vscode -> browser: poll GET /pending?token=&provider= every 2s, PASTE
-//     queued code into the SAME tab's chat box, then POST /ack { token, id }.
-//
-// Paste, never send: it only fills the chat box; you press Enter yourself.
-// Every paste is VERIFIED (the text must actually appear in the box). If a
-// strategy fails we try the next one; if all fail we retry on later polls
-// and finally tell you to press Ctrl+V / Cmd+V manually (VS Code always
-// copies to the clipboard first, so nothing is ever lost).
+//   tick: tell background "I am this chat tab" (heartbeat) + "anything
+//         for me?" (poll) -> inject queued code -> confirm pickup.
+// Paste, never send: only fills the chat box; you press Enter yourself.
 
 (function () {
   "use strict";
@@ -19,18 +15,42 @@
   var HEARTBEAT_MS = 15000;
   var POLL_MS = 2000;
   // How many polls (~2s each) we retry a failed paste before giving up and
-  // asking for a manual paste. ~10 tries ~= 20 seconds.
-  var MAX_ATTEMPTS = 10;
+  // asking for a manual paste. ~15 tries ~= 30 seconds (covers cold loads).
+  var MAX_ATTEMPTS = 15;
 
   function getApi() {
-    if (typeof browser !== "undefined" && browser.storage) {
+    if (typeof browser !== "undefined" && browser.runtime) {
       return browser;
     }
     return chrome;
   }
+  var api = getApi();
+
+  // Promise-safe sendMessage (Firefox returns a promise, Chrome needs a
+  // callback — this covers both).
+  function sendMsg(msg) {
+    try {
+      var p = api.runtime.sendMessage(msg);
+      if (p && typeof p.then === "function") {
+        return p;
+      }
+    } catch {
+      // fall through to callback style
+    }
+    return new Promise(function (resolve) {
+      try {
+        api.runtime.sendMessage(msg, function (res) {
+          resolve(res || { ok: false });
+        });
+      } catch {
+        resolve({ ok: false });
+      }
+    });
+  }
 
   function detectProvider() {
     var h = location.hostname;
+    var path = location.pathname || "";
     if (h.indexOf("chatgpt.com") !== -1) {
       return "chatgpt";
     }
@@ -43,6 +63,15 @@
     if (h.indexOf("deepseek.com") !== -1) {
       return "deepseek";
     }
+    if (h.indexOf("grok.com") !== -1) {
+      return "grok";
+    }
+    if (h.indexOf("x.com") !== -1 && path.indexOf("/i/grok") === 0) {
+      return "grok";
+    }
+    if (h.indexOf("copilot.microsoft.com") !== -1) {
+      return "copilot";
+    }
     return null;
   }
 
@@ -51,14 +80,16 @@
     return;
   }
 
-  // Per-site chat-box selectors, most-specific first. Site redesigns break
-  // selectors first — if autofill stops working after a site update, this
-  // table is the ONLY thing that needs updating.
+  // Per-site chat-box selectors, most-specific first. The generic
+  // role/visibility fallback at the end covers redesigns and new models:
+  // chat inputs are big visible editables. If autofill stops after a site
+  // update, this table is the ONLY thing that needs new entries.
   var SELECTORS = {
     chatgpt: [
       "#prompt-textarea",
       "[data-testid='prompt-textarea']",
       "div.ProseMirror",
+      "div[role='textbox']",
       "form div[contenteditable='true']",
       "div[contenteditable='true']",
       "form textarea",
@@ -66,25 +97,38 @@
     ],
     claude: [
       "[data-testid='chat-input']",
+      "div[role='textbox']",
       "div[contenteditable='true']",
       "textarea"
     ],
     gemini: [
       "rich-textarea div[contenteditable='true']",
       "rich-textarea",
+      "div[role='textbox']",
       "div[contenteditable='true']",
       "textarea"
     ],
     deepseek: [
       "#chat-input",
+      "div[role='textbox']",
       "textarea",
       "div[contenteditable='true']"
+    ],
+    grok: [
+      "div[role='textbox']",
+      "div[contenteditable='true']",
+      "textarea"
+    ],
+    copilot: [
+      "div[role='textbox']",
+      "div[contenteditable='true']",
+      "textarea"
     ]
   };
 
   // attempts[id] = number of failed paste tries for a queued item.
   var attempts = {};
-  // Toasted flags so we only nag once per item / state.
+  // Toasted flags so we only nag once per item.
   var toastedNoBox = {};
   var toastedManual = {};
 
@@ -111,7 +155,7 @@
     var tag = (el.tagName || "").toLowerCase();
     var editable = tag === "textarea" || tag === "input"
       ? null
-      : el.querySelector("div[contenteditable='true'], [contenteditable='plaintext-only'], textarea");
+      : el.querySelector("div[contenteditable='true'], [contenteditable='plaintext-only'], div[role='textbox'], textarea");
     if (editable && editable !== el) {
       return editable;
     }
@@ -130,7 +174,7 @@
   // Pick the largest visible editable — chat inputs are the biggest
   // contenteditable on these pages; tiny editables are usually comments.
   function findChatBox() {
-    var list = SELECTORS[PROVIDER] || ["textarea", "div[contenteditable='true']"];
+    var list = SELECTORS[PROVIDER] || ["div[role='textbox']", "textarea", "div[contenteditable='true']"];
     var best = null;
     var bestArea = 0;
     for (var i = 0; i < list.length; i++) {
@@ -288,7 +332,7 @@
     }
   }
 
-  // Green = linked, amber = token missing. Click = fill now.
+  // Green = linked, amber = bridge unreachable. Click = fill now.
   function showBadge(linked) {
     try {
       var b = document.getElementById("selectbeam-badge");
@@ -300,75 +344,47 @@
           "color:#fff;padding:4px 10px;border-radius:999px;" +
           "font:12px system-ui;opacity:.9;";
         b.addEventListener("click", function () {
-          loadCfg().then(function (cfg) {
-            if (cfg.token) {
-              poll(cfg);
-            } else {
-              toast("SelectBeam: not linked — open the popup, paste the token, Save, Link this tab.");
-            }
-          });
+          pollNow();
         });
         document.body.appendChild(b);
       }
-      b.textContent = linked ? "SelectBeam linked ✓" : "SelectBeam: not linked";
+      b.textContent = linked ? "SelectBeam linked ✓" : "SelectBeam: VS Code bridge off?";
       b.title = linked
         ? "This tab is linked to VS Code. New sends reuse it. Click to fill now."
-        : "Open the SelectBeam popup, paste the token, Save, then Link this tab.";
+        : "Is VS Code open with SelectBeam running? Click to retry.";
       b.style.background = linked ? "#0a7b34" : "#9a6a00";
     } catch {
       // ignore
     }
   }
 
-  async function loadCfg() {
-    var api = getApi();
+  function tabInfo() {
+    return {
+      provider: PROVIDER,
+      url: location.href.slice(0, 500),
+      title: document.title.slice(0, 200)
+    };
+  }
+
+  async function heartbeat() {
     try {
-      var got = await api.storage.local.get({ token: "", port: 51337 });
-      return { token: String(got.token || ""), port: Number(got.port) || 51337 };
+      var res = await sendMsg({ type: "hb", ...tabInfo() });
+      return !!(res && res.ok && res.linked);
     } catch {
-      return { token: "", port: 51337 };
+      return false; // background unreachable — retry next beat
     }
   }
 
-  function baseUrl(port) {
-    return "http://127.0.0.1:" + port;
-  }
-
-  async function heartbeat(cfg) {
-    if (!cfg.token) {
-      return false;
-    }
+  async function ack(id) {
     try {
-      var r = await fetch(baseUrl(cfg.port) + "/tabs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          token: cfg.token,
-          provider: PROVIDER,
-          url: location.href.slice(0, 500),
-          title: document.title.slice(0, 200)
-        })
-      });
-      return r.ok;
-    } catch {
-      return false; // VS Code closed / bridge off — retry next beat
-    }
-  }
-
-  async function ack(cfg, id) {
-    try {
-      await fetch(baseUrl(cfg.port) + "/ack", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: cfg.token, id: id })
-      });
+      await sendMsg({ type: "ack", id: id });
     } catch {
       // ack failed — item stays queued, may refill once. Acceptable.
     }
   }
 
-  function giveUpManual(cfg, item) {
-    ack(cfg, item.id);
+  function giveUpManual(item) {
+    ack(item.id);
     delete attempts[item.id];
     if (!toastedManual[item.id]) {
       toastedManual[item.id] = true;
@@ -380,24 +396,14 @@
     }
   }
 
-  async function poll(cfg) {
-    if (!cfg.token) {
-      return;
-    }
-    var data;
+  async function pollNow() {
+    var items = [];
     try {
-      var r = await fetch(
-        baseUrl(cfg.port) + "/pending?token=" + encodeURIComponent(cfg.token) +
-        "&provider=" + encodeURIComponent(PROVIDER)
-      );
-      if (!r.ok) {
-        return;
-      }
-      data = await r.json();
+      var res = await sendMsg({ type: "poll", provider: PROVIDER });
+      items = (res && res.items) || [];
     } catch {
       return; // bridge down — silent, heartbeat will relink later
     }
-    var items = (data && data.items) || [];
     for (var i = 0; i < items.length; i++) {
       var item = items[i];
       var box = findChatBox();
@@ -408,36 +414,30 @@
           toast("SelectBeam: code arrived but the chat box isn't ready — keeping it queued, it will fill when the editor loads.");
         }
         if (attempts[item.id] > MAX_ATTEMPTS) {
-          giveUpManual(cfg, item);
+          giveUpManual(item);
         }
         break; // same box for all items — retry next poll
       }
       var text = (i > 0 ? "\n\n" : "") + item.text;
       if (pasteIntoBox(box, text)) {
         delete attempts[item.id];
-        await ack(cfg, item.id);
+        await ack(item.id);
         toast("SelectBeam filled code (" + (item.fileRef || PROVIDER) + ") — review & submit yourself.");
       } else {
         attempts[item.id] = (attempts[item.id] || 0) + 1;
         if (attempts[item.id] > MAX_ATTEMPTS) {
-          giveUpManual(cfg, item);
+          giveUpManual(item);
         }
-        break; // retry next poll (~2s) until budget runs out
+        break; // retry next poll until budget runs out
       }
     }
   }
 
-  var cfgCache = null;
   async function tick() {
-    cfgCache = await loadCfg();
-    if (!cfgCache.token) {
-      showBadge(false);
-      return; // not linked yet — user must paste token in popup first
-    }
-    var linked = await heartbeat(cfgCache);
+    var linked = await heartbeat();
     showBadge(linked);
     if (linked) {
-      await poll(cfgCache);
+      await pollNow();
     }
   }
 
@@ -446,16 +446,12 @@
   // observe DOM, re-poll right when the chat box appears.
   tick();
   setInterval(tick, Math.max(POLL_MS, 1500));
-  setInterval(function () {
-    if (cfgCache && cfgCache.token) {
-      heartbeat(cfgCache);
-    }
-  }, HEARTBEAT_MS);
+  setInterval(heartbeat, HEARTBEAT_MS);
 
   var lastTitle = document.title;
   var pollQueued = false;
   function pollSoon() {
-    if (pollQueued || !cfgCache || !cfgCache.token) {
+    if (pollQueued) {
       return;
     }
     pollQueued = true;
@@ -463,9 +459,11 @@
       pollQueued = false;
       if (document.title !== lastTitle) {
         lastTitle = document.title;
-        heartbeat(cfgCache);
+        heartbeat().then(function (linked) {
+          showBadge(linked);
+        });
       }
-      poll(cfgCache);
+      pollNow();
     }, 1000);
   }
   try {
@@ -476,9 +474,5 @@
   } catch {
     // observer unsupported — intervals still cover it
   }
-  window.addEventListener("focus", function () {
-    if (cfgCache && cfgCache.token) {
-      poll(cfgCache);
-    }
-  });
+  window.addEventListener("focus", pollNow);
 })();

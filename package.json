@@ -2,7 +2,7 @@
   "name": "selectbeam",
   "displayName": "SelectBeam",
   "description": "Beam your code straight to AI — no copy-paste, no tab-switching.",
-  "version": "0.0.5",
+  "version": "0.0.3",
   "publisher": "NoahMenezes",
   "license": "MIT",
   "icon": "icon.png",
@@ -20,6 +20,7 @@
     "claude",
     "gemini",
     "deepseek",
+    "grok",
     "copilot",
     "clipboard",
     "productivity",
@@ -73,6 +74,42 @@
         }
       ]
     },
+    "walkthroughs": [
+      {
+        "id": "selectbeam.getStarted",
+        "title": "SelectBeam in 60 seconds",
+        "description": "Highlight code, send it to AI, same tab every time. No token, no setup.",
+        "steps": [
+          {
+            "id": "selectbeam.step.send",
+            "title": "Send your first snippet",
+            "description": "Highlight any code and press Ctrl+Alt+A (Cmd+Alt+A on Mac). Pick an AI once — your pick is remembered from then on.",
+            "media": {
+              "markdown": "walkthroughs/step-send.md"
+            },
+            "completionEvents": [
+              "onCommand:selectbeam.sendToBrowser"
+            ]
+          },
+          {
+            "id": "selectbeam.step.companion",
+            "title": "Link your browser (once)",
+            "description": "In Firefox open about:debugging, Load Temporary Add-on, pick browser/manifest.json. Then just keep a chat tab open.",
+            "media": {
+              "markdown": "walkthroughs/step-companion.md"
+            }
+          },
+          {
+            "id": "selectbeam.step.reuse",
+            "title": "Send again — same tab",
+            "description": "Every further send refills the same chat tab automatically. No new tabs, no pasting, never auto-submits.",
+            "media": {
+              "markdown": "walkthroughs/step-reuse.md"
+            }
+          }
+        ]
+      }
+    ],
     "configuration": {
       "title": "SelectBeam",
       "properties": {
@@ -104,9 +141,9 @@
         },
         "selectbeam.defaultBrowser": {
           "type": "string",
-          "enum": ["ask", "last", "chatgpt", "claude", "gemini", "deepseek"],
-          "default": "ask",
-          "description": "Which browser AI to open. Ask shows a list every time. Last reuses your last pick. Or pick one directly."
+          "enum": ["ask", "last", "chatgpt", "claude", "gemini", "deepseek", "grok", "copilot"],
+          "default": "last",
+          "description": "Which browser AI the shortcut sends to. Last reuses your last pick (ask once, then automatic). Ask shows a list every time. Or fix one. The palette command always lets you pick."
         },
         "selectbeam.rememberBrowserChoice": {
           "type": "boolean",

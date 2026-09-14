@@ -10,17 +10,17 @@ port it to WXT 1:1 — the VS Code HTTP endpoints do NOT change.
 |---|---|
 | `manifest.json` | `wxt.config.ts` (manifest generated) |
 | `background.js` | `entrypoints/background.ts` (`defineBackground`) |
-| `content.js` (provider switch inside) | `entrypoints/chatgpt.content.ts`, `claude.content.ts`, `gemini.content.ts`, `deepseek.content.ts` (or one file with 4 `matches`) + `utils/selectors.ts` |
-| `popup.html` + `popup.js` | `entrypoints/popup.html` + `popup/main.ts` |
-| `browser.storage.local` token/port | `wxt/storage` (`storage.defineItem`) |
+| `content.js` (provider switch inside) | one content file with all `matches` + `utils/selectors.ts` + `utils/inject.ts` |
+| `popup.html` + `popup.js` | `entrypoints/popup.html` + `popup/main.ts` (status only) |
+| `browser.storage.local` port | `wxt/storage` (`storage.defineItem`) |
 
 ## Keep identical
 
 - localhost base `http://127.0.0.1:{port}` and all 6 endpoints + JSON shapes
-  (`/status`, `/tabs` GET+POST, `/pending`, `/ack`, `/queue`).
-- Token auth: `?token=` for GET, `{ token }` for POST. CORS `*`.
+  (`/status`, `/tabs` GET+POST, `/pending`, `/ack`, `/queue`). No token —
+  server trusts the extension Origin; background page owns all fetches.
 - Poll 2s, heartbeat 15s, title-change re-heartbeat.
-- Per-provider selector table and React-safe `insertText` injection.
+- Per-provider selector table and verified `insertText` injection.
 - Never auto-submit.
 
 ## Commands (needs internet once)
@@ -34,5 +34,5 @@ npm run build && npm run zip
 ```
 
 Then `Load Temporary Add-on` the `.output/firefox-mv3/` build instead of
-this folder. Test matrix: link → send → reuse, kill tab → new chat,
-401 bad token, bridge down fallback, Chrome unpacked via `manifest.chrome.json` logic.
+this folder. Test matrix: send → reuse, kill tab → new chat autofills,
+page-origin denied, bridge down fallback, Chrome unpacked via `manifest.chrome.json` logic.

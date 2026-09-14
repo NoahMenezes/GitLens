@@ -17,12 +17,13 @@ export const KEY_LAST_BROWSER = "selectbeam.lastBrowserId";
 // Live-tab memory: provider -> LiveTab (global-scoped so the companion
 // popup works across windows).
 export const KEY_LIVE_TABS = "selectbeam.liveTabs";
-// Bridge auth token (global-scoped, localhost only).
-export const KEY_BRIDGE_TOKEN = "selectbeam.bridgeToken";
+// Origin schemes allowed to call the bridge (the companion only —
+// web pages send http(s) origins and are rejected, so no token needed).
+export const EXT_ORIGIN_PREFIXES = ["moz-extension://", "chrome-extension://"];
 
 // --- Bridge limits ---------------------------------------------------------
 
-export const BRIDGE_VERSION = "0.0.5";
+export const BRIDGE_VERSION = "0.0.3";
 // Max queued pastes kept in memory (temporary, not persisted).
 export const MAX_PENDING = 20;
 // Max JSON body for bridge POSTs (2 MB — code selections are small).
@@ -49,6 +50,8 @@ export const BROWSERS: BrowserDef[] = [
   { id: "claude", label: "$(globe) Claude", description: "Copy + open claude.ai", defaultUrl: "https://claude.ai/new" },
   { id: "gemini", label: "$(globe) Gemini", description: "Copy + open gemini.google.com", defaultUrl: "https://gemini.google.com/app" },
   { id: "deepseek", label: "$(globe) DeepSeek", description: "Copy + open chat.deepseek.com", defaultUrl: "https://chat.deepseek.com/" },
+  { id: "grok", label: "$(globe) Grok", description: "Copy + open grok.com", defaultUrl: "https://grok.com/" },
+  { id: "copilot", label: "$(globe) Copilot", description: "Copy + open copilot.microsoft.com", defaultUrl: "https://copilot.microsoft.com/" },
 ];
 
 export function isKnownProvider(id: string): boolean {

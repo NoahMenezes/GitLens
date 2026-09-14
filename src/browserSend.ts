@@ -1,7 +1,7 @@
-// SelectBeam — browser send path: resolve target, reuse live tab via the
-// bridge queue (SAME tab, no new-tab spam) or fall back to copy + open.
-// Clipboard is ALWAYS written first so paste-once still works when the
-// companion is missing. Never auto-submits.
+// SelectBeam — browser send path: one-tap, same-tab, every provider.
+// Clipboard is ALWAYS written first so nothing is ever lost. Every send is
+// ALSO queued on the bridge, so even a first-ever send to a new AI
+// auto-fills when its chat loads. SelectBeam never auto-submits.
 
 import * as vscode from "vscode";
 import { BROWSERS, findBrowser } from "./constants";
@@ -15,7 +15,6 @@ import { pasteHint } from "./platform";
 import {
   buildPayload,
   copyToClipboard,
-  withOptionalInstruction,
 } from "./payload";
 import {
   ageLabel,
@@ -27,10 +26,14 @@ import {
 import { isBridgeOwner, queuePasteForBrowser, showBridgeStatus } from "./bridge";
 import type { BrowserDef } from "./types";
 
-// `selectbeam.sendToBrowser` — honors `selectbeam.defaultBrowser`
-// ("ask" | "last" | specific id) and remembers the pick for "last" mode.
+// `selectbeam.sendToBrowser` (palette): ALWAYS shows the picker so switching
+// models is one command away. The pick updates "last". Pass forceAsk=false
+// only from automatic flows (there are none right now — the shortcut goes
+// through sendSelection, which reaches here via the no-terminal picker;
+// "last" default keeps that to a single first-time question).
 export async function sendToBrowser(
-  context: vscode.ExtensionContext
+  context: vscode.ExtensionContext,
+  forceAsk = true
 ): Promise<void> {
   const editor: vscode.TextEditor | undefined =
     vscode.window.activeTextEditor;
@@ -49,7 +52,7 @@ export async function sendToBrowser(
     buildPayload(editor);
 
   const browser: BrowserDef | "clipboard" | undefined =
-    await resolveBrowser(context);
+    await resolveBrowser(context, forceAsk);
   if (!browser) {
     return; // Esc
   }
@@ -65,12 +68,14 @@ export async function sendToBrowser(
   );
 }
 
-// Resolve which browser AI to use: explicit default -> use it; "last" ->
-// reuse remembered pick (or ask); "ask" -> picker with clipboard fallback.
+// Resolve which browser AI to use. forceAsk=true (palette) always shows the
+// picker. Otherwise: fixed default -> use it; "last" -> remembered pick (or
+// picker on fresh installs); "ask" -> picker with clipboard fallback.
 async function resolveBrowser(
-  context: vscode.ExtensionContext
+  context: vscode.ExtensionContext,
+  forceAsk = false
 ): Promise<BrowserDef | "clipboard" | undefined> {
-  const defaultBrowser = getDefaultBrowser();
+  const defaultBrowser = forceAsk ? "ask" : getDefaultBrowser();
 
   if (defaultBrowser !== "ask" && defaultBrowser !== "last") {
     const fixed = findBrowser(defaultBrowser);
@@ -94,11 +99,12 @@ async function resolveBrowser(
     pickKind: "browser" | "clipboard";
     browser?: BrowserDef;
   }
+  const lastId = getLastBrowserId(context);
   const items: BrowserPick[] = [
     ...BROWSERS.map(
       (b: BrowserDef): BrowserPick => ({
-        label: b.label,
-        description: b.description,
+        label: b.id === lastId ? `${b.label} $(history)` : b.label,
+        description: b.id === lastId ? `Last used — ${b.description}` : b.description,
         pickKind: "browser",
         browser: b,
       })
@@ -111,7 +117,7 @@ async function resolveBrowser(
   ];
   const picked: BrowserPick | undefined =
     await vscode.window.showQuickPick<BrowserPick>(items, {
-      placeHolder: `SelectBeam: pick a browser AI (code is copied — paste once with ${pasteHint()})`,
+      placeHolder: `SelectBeam: pick a browser AI (remembered after this — paste once with ${pasteHint()} only if the companion is missing)`,
     });
   if (!picked) {
     return undefined;
@@ -141,19 +147,25 @@ export async function sendToBrowserTarget(
   endLine: number
 ): Promise<void> {
   await rememberBrowser(context, browser.id);
-  const finalText: string = await withOptionalInstruction(
-    relativePath, startLine, endLine, `${browser.id} `, payload
-  );
+  // One-tap: browser sends never ask for an instruction note (the terminal
+  // path still honors `selectbeam.askForPrompt`). Code goes as-is.
+  const finalText: string = payload;
   const fileRef = `${relativePath} (lines ${startLine}-${endLine})`;
 
   await vscode.env.clipboard.writeText(finalText);
 
-  // 1) Try SAME-tab reuse: fresh live tab + reuse on + bridge owns port.
-  const live = getLiveTab(context, browser.id);
-  if (live && getReuseBrowserTab() && isBridgeOwner()) {
+  // ALWAYS queue when we own the bridge — even with no live tab yet. The
+  // companion claims it on first poll, so first-ever sends auto-fill too.
+  const canQueue = isBridgeOwner() && getReuseBrowserTab();
+  if (canQueue) {
     queuePasteForBrowser(browser.id, finalText, fileRef);
+  }
+
+  // 1) Fresh live tab -> same-tab reuse, no new tab.
+  const live = getLiveTab(context, browser.id);
+  if (live && canQueue) {
     void vscode.window.showInformationMessage(
-      `SelectBeam: ${fileRef} queued for your open ${browser.id} tab "${live.title || live.url}" (${ageLabel(live.updatedAt)}) — it auto-fills in ~2s. Else press ${pasteHint()} there.`,
+      `SelectBeam: ${fileRef} sent to your open ${browser.id} tab "${live.title || live.url}" (${ageLabel(live.updatedAt)}) — fills in ~2s.`,
       "Copy again"
     ).then(async (action: string | undefined): Promise<void> => {
       if (action === "Copy again") {
@@ -167,17 +179,17 @@ export async function sendToBrowserTarget(
     return;
   }
 
-  // 2) No live tab (or bridge off): remember a provisional entry so the
-  // companion can claim it on heartbeat, then open the site (new chat).
+  // 2) No live tab (or bridge off): open the chat. If queued above, the new
+  // tab auto-fills when its editor loads — no manual paste needed.
   await setLiveTab(context, browser.id, getBrowserUrl(browser), "", true);
   const url: string = getBrowserUrl(browser);
   try {
     const uri: vscode.Uri = vscode.Uri.parse(url);
     const opened: boolean = await vscode.env.openExternal(uri);
     if (opened) {
-      const hint = live && !isBridgeOwner()
-        ? `Bridge is owned by another window — opened ${browser.id} normally. Press ${pasteHint()} there.`
-        : `No linked ${browser.id} tab yet — opened a chat. Link it in the companion popup, next send reuses it. Press ${pasteHint()} there.`;
+      const hint = canQueue
+        ? `Opening ${browser.id} — code fills itself when the chat loads.`
+        : `Bridge is ${isBridgeOwner() ? "off" : "owned by another window"} — opened ${browser.id} normally. Press ${pasteHint()} there.`;
       void vscode.window.showInformationMessage(
         `SelectBeam: ${fileRef} copied — ${hint}`,
         "Copy again",
@@ -190,7 +202,7 @@ export async function sendToBrowserTarget(
         }
       });
       vscode.window.setStatusBarMessage(
-        `$(globe) SelectBeam: opened ${browser.id} — code is in your clipboard, press ${pasteHint()} there`,
+        `$(globe) SelectBeam: opened ${browser.id} — ${canQueue ? "auto-fill queued" : `code is in your clipboard, press ${pasteHint()} there`}`,
         5000
       );
     } else {

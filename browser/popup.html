@@ -14,28 +14,18 @@
   #status { margin-top: 10px; padding: 8px; border-radius: 6px; background: #f2f2f2; white-space: pre-wrap; }
   .ok { background: #e6f6ec !important; }
   .bad { background: #fdecec !important; }
-  ol { padding-left: 18px; margin: 6px 0; color: #555; }
 </style>
 </head>
 <body>
   <h1>SelectBeam Bridge</h1>
-  <p>Link THIS chat tab to VS Code so sends reuse it instead of opening new tabs.</p>
-  <ol>
-    <li>In VS Code: <b>Ctrl+Shift+P → SelectBeam: Show Browser Bridge Status</b> (copies token).</li>
-    <li>Paste token below, Save, then <b>Link this tab</b>.</li>
-  </ol>
-  <label for="port">Bridge port</label>
+  <p>No setup needed. Just keep a chat tab open and send from VS Code — every supported AI (ChatGPT, Claude, Gemini, DeepSeek, Grok, Copilot) links itself.</p>
+  <label for="port">Bridge port (only change if VS Code uses another)</label>
   <input id="port" type="number" value="51337" />
-  <label for="token">Bridge token</label>
-  <input id="token" type="text" placeholder="paste token from VS Code" autocomplete="off" />
   <div class="row">
-    <button id="save">Save</button>
-    <button id="link">Link this tab</button>
+    <button id="save">Save port</button>
+    <button id="refresh">Refresh status</button>
   </div>
-  <div class="row">
-    <button id="test">Test bridge</button>
-  </div>
-  <div id="status">Not checked yet.</div>
+  <div id="status">Checking…</div>
   <script src="popup.js"></script>
 </body>
 </html>

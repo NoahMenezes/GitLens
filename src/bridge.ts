@@ -2,19 +2,26 @@
 // Lets the browser companion report its live tab and pick up queued code,
 // so repeat sends reuse the SAME tab instead of opening new tabs.
 //
-// Endpoints (all localhost, token-guarded except /status, CORS-open):
-// - GET  /status                  -> { ok, version, liveTabs, pending }
-// - POST /tabs   {token,provider,url,title} -> remembers live tab (heartbeat)
-// - GET  /pending?token=&provider= -> queued pastes for that provider
-// - POST /ack    {token,id}       -> companion confirms pickup, we drop it
-// - GET  /tabs?token=             -> live-tab map (popup status)
-// - POST /queue  {token,provider,text} -> forward a paste (multi-window)
+// Zero-setup auth: the ONLY callers are the companion's background page
+// (Origin: moz-extension://… / chrome-extension://…) and local tools
+// (no Origin, e.g. the second VS Code window's /queue forward). Any
+// http(s) page origin is rejected — websites can never touch the bridge,
+// so there is no token to copy, ever.
+//
+// Endpoints (all localhost, CORS-open for the companion):
+// - GET  /status              -> { ok, version, liveTabs, pending }
+// - POST /tabs   {provider,url,title} -> remembers live tab (heartbeat)
+// - GET  /pending?provider=   -> queued pastes for that provider
+// - POST /ack    {id}         -> companion confirms pickup, we drop it
+// - GET  /tabs                -> live-tab map (popup status)
+// - POST /queue  {provider,text,fileRef} -> forward a paste (multi-window)
 
 import * as vscode from "vscode";
 import * as http from "http";
 import * as crypto from "crypto";
 import {
   BRIDGE_VERSION,
+  EXT_ORIGIN_PREFIXES,
   MAX_BODY_BYTES,
   MAX_PASTE_CHARS,
   MAX_PENDING,
@@ -28,7 +35,6 @@ import { pasteHint, shortcutHint } from "./platform";
 import {
   ageLabel,
   getLiveTabs,
-  getOrCreateBridgeToken,
   setLiveTab,
 } from "./state";
 import type { PendingPaste } from "./types";
@@ -66,6 +72,20 @@ export function queuePasteForBrowser(
     pendingQueue.shift();
   }
   return item;
+}
+
+/**
+ * True when the caller may use the bridge: the companion background page
+ * (extension origin) or a local non-browser client (no Origin at all,
+ * e.g. curl or the second VS Code window). Web pages always send an
+ * http(s) Origin and are rejected — this is what replaces the token.
+ */
+export function isAllowedOrigin(req: http.IncomingMessage): boolean {
+  const origin = req.headers.origin;
+  if (!origin) {
+    return true;
+  }
+  return EXT_ORIGIN_PREFIXES.some((p): boolean => origin.startsWith(p));
 }
 
 function sendJson(
@@ -118,7 +138,6 @@ export async function startBridgeServer(
   if (bridgeServer || !isBridgeEnabledSetting()) {
     return;
   }
-  const token = await getOrCreateBridgeToken(context);
   const port = getBridgePortSetting();
 
   const server = http.createServer((req, res): void => {
@@ -133,32 +152,29 @@ export async function startBridgeServer(
         res.end();
         return;
       }
-      // GET /status — no token needed (health check for popup).
+      // GET /status — open health check (no live data beyond counts).
       if (req.method === "GET" && url.pathname === "/status") {
         sendJson(res, 200, {
           ok: true,
           version: BRIDGE_VERSION,
           ownsPort: true,
-          liveTabs: getLiveTabs(context),
+          liveCount: Object.keys(getLiveTabs(context)).length,
           pending: pendingQueue.length,
         });
         return;
       }
-      // GET /tabs?token= — popup status.
+      // Everything else: companion or local clients only.
+      if (!isAllowedOrigin(req)) {
+        sendJson(res, 401, { ok: false, error: "forbidden origin" });
+        return;
+      }
+      // GET /tabs — popup status.
       if (req.method === "GET" && url.pathname === "/tabs") {
-        if (url.searchParams.get("token") !== token) {
-          sendJson(res, 401, { ok: false, error: "bad token" });
-          return;
-        }
         sendJson(res, 200, { ok: true, liveTabs: getLiveTabs(context) });
         return;
       }
-      // GET /pending?token=&provider= — companion polls this.
+      // GET /pending?provider= — companion polls this.
       if (req.method === "GET" && url.pathname === "/pending") {
-        if (url.searchParams.get("token") !== token) {
-          sendJson(res, 401, { ok: false, error: "bad token" });
-          return;
-        }
         const provider = url.searchParams.get("provider") || "";
         const items = pendingQueue.filter(
           (p): boolean => p.provider === provider
@@ -166,15 +182,11 @@ export async function startBridgeServer(
         sendJson(res, 200, { ok: true, items });
         return;
       }
-      // POST /tabs { token, provider, url, title } — heartbeat (b->v).
+      // POST /tabs { provider, url, title } — heartbeat (b->v).
       if (req.method === "POST" && url.pathname === "/tabs") {
         const body = (await readJsonBody(req)) as {
-          token?: string; provider?: string; url?: string; title?: string;
+          provider?: string; url?: string; title?: string;
         };
-        if (body.token !== token) {
-          sendJson(res, 401, { ok: false, error: "bad token" });
-          return;
-        }
         if (!body.provider || !isKnownProvider(body.provider)) {
           sendJson(res, 400, { ok: false, error: "unknown provider" });
           return;
@@ -188,15 +200,9 @@ export async function startBridgeServer(
         sendJson(res, 200, { ok: true });
         return;
       }
-      // POST /ack { token, id } — companion picked up a paste.
+      // POST /ack { id } — companion picked up a paste.
       if (req.method === "POST" && url.pathname === "/ack") {
-        const body = (await readJsonBody(req)) as {
-          token?: string; id?: string;
-        };
-        if (body.token !== token) {
-          sendJson(res, 401, { ok: false, error: "bad token" });
-          return;
-        }
+        const body = (await readJsonBody(req)) as { id?: string };
         const i = pendingQueue.findIndex((p): boolean => p.id === body.id);
         if (i >= 0) {
           pendingQueue.splice(i, 1);
@@ -204,16 +210,12 @@ export async function startBridgeServer(
         sendJson(res, 200, { ok: true });
         return;
       }
-      // POST /queue { token, provider, text, fileRef } — multi-window
+      // POST /queue { provider, text, fileRef } — multi-window
       // forward: a window that does NOT own the port can still queue.
       if (req.method === "POST" && url.pathname === "/queue") {
         const body = (await readJsonBody(req)) as {
-          token?: string; provider?: string; text?: string; fileRef?: string;
+          provider?: string; text?: string; fileRef?: string;
         };
-        if (body.token !== token) {
-          sendJson(res, 401, { ok: false, error: "bad token" });
-          return;
-        }
         if (
           !body.provider ||
           !isKnownProvider(body.provider) ||
@@ -240,7 +242,7 @@ export async function startBridgeServer(
     });
   });
 
-  // FIX: never call close() on a server that failed to bind. Node throws
+  // Never call close() on a server that failed to bind. Node throws
   // ERR_SERVER_NOT_RUNNING for close() without listen(). Track `bound`
   // and only keep the server when it actually owns the port.
   const bound: boolean = await new Promise<boolean>((resolve): void => {
@@ -268,7 +270,7 @@ export async function startBridgeServer(
 }
 
 export function stopBridgeServer(): void {
-  // FIX: guard close() — only a listening server may be closed.
+  // Guard close() — only a listening server may be closed.
   if (bridgeServer && bridgeListening) {
     try {
       bridgeServer.close();
@@ -283,27 +285,19 @@ export function stopBridgeServer(): void {
 export async function showBridgeStatus(
   context: vscode.ExtensionContext
 ): Promise<void> {
-  const token = await getOrCreateBridgeToken(context);
   const port = getBridgePortSetting();
   const tabs = Object.values(getLiveTabs(context));
   const liveLine =
     tabs.length === 0
-      ? "No linked tabs yet. Open a chat once, then press Link in the companion popup."
+      ? "No linked tabs yet — open any supported AI chat and send from VS Code."
       : tabs
           .map(
             (t): string =>
               `${t.provider}: "${t.title || t.url}" (${ageLabel(t.updatedAt)})`
           )
           .join("\n");
-  // FIX: status is information, not a warning — modal info, not modal warn.
   const msg =
-    `SelectBeam bridge ${isBridgeOwner() ? "RUNNING" : "NOT OWNING PORT"} — http://127.0.0.1:${port}\n` +
-    `Token (paste once into companion popup): ${token}\n\n` +
-    `Endpoints: GET /status · POST /tabs · GET /pending?token=&provider= · POST /ack · GET /tabs?token= · POST /queue\n\n` +
+    `SelectBeam bridge ${isBridgeOwner() ? "RUNNING" : "NOT OWNING PORT"} — http://127.0.0.1:${port}\n\n` +
     `Live tabs:\n${liveLine}\n\nQueued: ${pendingQueue.length} (shortcut ${shortcutHint()}, paste ${pasteHint()})`;
-  await vscode.env.clipboard.writeText(token);
-  void vscode.window.showInformationMessage(
-    "SelectBeam: bridge token copied to clipboard — paste it into the companion popup."
-  );
   void vscode.window.showInformationMessage(msg, { modal: true });
 }

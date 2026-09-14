@@ -2,7 +2,7 @@
 
 All changes to SelectBeam will be listed here.
 
-## [0.0.5] — 2026-09-15
+## [0.0.3] — 2026-09-15
 
 - Fixed companion paste: the chat box fill is now verified (text must
   actually appear), with three strategies in order — editor-native
@@ -13,8 +13,6 @@ All changes to SelectBeam will be listed here.
 - New on-page diagnostics: amber “not linked” vs green “linked ✓” badge
   (click = fill now), plus toasts when code arrives but the editor isn't
   ready. Editor re-poll on DOM change and tab focus for SPA navigation.
-
-## [0.0.4] — 2026-09-15
 
 - Split `src/extension.ts` (1342 lines) into modules: `types`,
   `constants`, `platform`, `config`, `payload`, `state`, `bridge`,
@@ -30,8 +28,6 @@ All changes to SelectBeam will be listed here.
 - Fixed: prod build left a stale dev `extension.js.map` in `dist/` —
   `esbuild.js` now removes it on `--production`.
 - Simplified live-tab check to a single confirmed-title test.
-
-## [0.0.3] — 2026-09-15
 
 - Repo fixed to https://github.com/NoahMenezes/SelectBeam (remote was
   pointing at GitLens). Added repository/homepage/bugs fields.
@@ -53,6 +49,15 @@ All changes to SelectBeam will be listed here.
 - New Show Browser Bridge Status command (copies token, lists live tabs).
 - New settings: reuseBrowserTab, liveTabTTLMinutes, bridgeEnabled,
   bridgePort. Choose Target -> Auto now also clears live tabs + queue.
+- Zero-setup auth: token deleted. Background page owns all bridge traffic
+  and the server trusts the extension Origin, so websites stay locked out
+  with nothing to copy. Popup is status-only.
+- Always-queue: every send is queued, so first-ever sends auto-fill when
+  the chat loads. Browser sends skip the instruction prompt (one-tap).
+- Palette browser command always lets you pick (updates last);
+  `defaultBrowser` default is now `"last"` — ask once, then automatic.
+- New providers Grok (grok.com, x.com/i/grok) and Copilot
+  (copilot.microsoft.com): same flow, same selectors machinery.
 
 ## [0.0.2] — 2026-09-14
 

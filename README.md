@@ -69,10 +69,10 @@ The shortcut only works when text is highlighted. It is 3 keys on purpose
   add anything else, then press Enter.
 - Browser without companion: your code is copied and the chat site opens.
   Press `Ctrl+V` once (`Cmd+V` on Mac) in the chat box.
-- Browser with companion: your code is queued for the linked tab and
-  auto-fills there in ~2 seconds. Still review it yourself — SelectBeam
-  never presses Enter for you. If the chat is not open, SelectBeam opens
-  a new chat instead (link it once, then it is reused).
+- Browser with companion: your code is sent to the same tab and
+  auto-fills there in ~2 seconds — no questions, no pasting. Still review
+  it yourself — SelectBeam never presses Enter for you. First-ever send
+  to a new AI opens its chat and auto-fills when it loads.
 
 ## Mac keys
 
@@ -92,9 +92,9 @@ it — macOS sometimes reserves `Cmd+Alt` combos.
 | Command | How to reach it | What it does |
 |---|---|---|
 | SelectBeam: Send Selection to AI | Shortcut, right-click, or palette | Sends your selection to a terminal AI. If you prefer, you can also pick a browser AI from the same list. |
-| SelectBeam: Send Selection to Browser AI (ChatGPT / Claude / Gemini / DeepSeek) | Palette or right-click | Copies your selection; with a linked tab it refills that tab, otherwise it opens the chat site you pick. Paste once if needed. |
+| SelectBeam: Send Selection to Browser AI (ChatGPT / Claude / Gemini / DeepSeek / Grok / Copilot) | Palette or right-click | Always lets you pick the AI (and remembers it). One-tap after that. |
 | SelectBeam: Choose Send Target | Palette only | Changes where future sends go: back to Auto, clipboard only for this session, or one fixed terminal. Auto also clears live tabs. |
-| SelectBeam: Show Browser Bridge Status | Palette only | Shows bridge port, copies the token to clipboard, lists linked tabs and queued items. |
+| SelectBeam: Show Browser Bridge Status | Palette only | Shows bridge port, linked tabs, and queued items. |
 
 ## Settings
 
@@ -108,7 +108,7 @@ for most people.
 | `selectbeam.askForPrompt` | `true` | Asks for a short note after your code, for example “explain this”. Leave it empty to send code only. |
 | `selectbeam.agentStartDelayMs` | `2000` | How long to wait after starting an AI tool before putting code in, so the tool has time to open. In milliseconds. |
 | `selectbeam.agentCommands` | `{}` | If one of your AI tools starts with a different command, write it here. Example: `{ "copilot": "gh copilot" }`. |
-| `selectbeam.defaultBrowser` | `"ask"` | Which browser AI to open. `"ask"` asks every time. `"last"` reuses your last pick. Or set one: `"chatgpt"`, `"claude"`, `"gemini"`, `"deepseek"`. |
+| `selectbeam.defaultBrowser` | `"last"` | Ask once, then automatic. `"ask"` asks every time. Or fix one: `"chatgpt"`, `"claude"`, `"gemini"`, `"deepseek"`, `"grok"`, `"copilot"`. The palette command always lets you pick (and updates last). |
 | `selectbeam.rememberBrowserChoice` | `true` | Remembers your browser pick so `"last"` works. |
 | `selectbeam.browserUrls` | `{}` | If a chat site address changes, write it here. Example: `{ "deepseek": "https://chat.deepseek.com/" }`. |
 | `selectbeam.reuseBrowserTab` | `true` | Reuse the linked browser tab instead of opening a new tab every time. Needs the companion. |
@@ -120,39 +120,42 @@ To reset everything, run **SelectBeam: Choose Send Target** and pick
 **Auto**. That clears the saved terminal, the saved browser, live tabs,
 and the clipboard-only mode.
 
-## Browser companion — Firefox first (no internet needed)
+## Browser companion — Firefox first (no internet needed, no setup)
 
 The companion is vanilla MV3 (`browser/` folder, no `npm install`, no build).
-Firefox first, Chrome/Edge next with the same files.
+Firefox first, Chrome/Edge next with the same files. It works with ChatGPT,
+Claude, Gemini, DeepSeek, Grok, and Copilot — every model the same way.
+
+**There is nothing to pair.** No token, no account, nothing to type. Every
+chat tab links itself the moment it loads.
 
 **Firefox setup (temporary install, good for daily use):**
 
-1. Open VS Code, run **SelectBeam: Show Browser Bridge Status**.
-   The token is copied to your clipboard automatically.
-2. In Firefox, open `about:debugging#/runtime/this-firefox`.
-3. Click **Load Temporary Add-on**, pick the file
+1. In Firefox, open `about:debugging#/runtime/this-firefox`.
+2. Click **Load Temporary Add-on**, pick the file
    `browser/manifest.json` from this repo. Confirm “SelectBeam Bridge”
    appears.
-4. Open your chat (e.g. `https://chatgpt.com/`), click the
-   **SelectBeam Bridge** toolbar icon.
-5. Paste the token, check the port (`51337`), press **Save**, then
-   **Link this tab**. It should say “Linked!”.
-6. Back in VS Code: highlight code, press `Ctrl+Alt+A`
-   (`Cmd+Alt+A` on Mac), send to the same provider. The SAME tab
-   auto-fills in ~2 seconds. No new tab.
-7. If the chat was never linked (or was closed), SelectBeam opens a new
-   chat — link it once and it is reused from then on.
+3. Open your chats (ChatGPT, Claude, …) in tabs and keep them open.
+4. Back in VS Code: highlight code, press `Ctrl+Alt+A`
+   (`Cmd+Alt+A` on Mac), pick an AI once. The tab auto-fills in
+   ~2 seconds. Every further send refills the same tab — no new tabs,
+   no pasting, no questions.
+
+First-ever send to a new AI opens its chat and still auto-fills when it
+loads. Switch AI anytime via the palette command **SelectBeam: Send
+Selection to Browser AI**, which always lets you pick (and updates last).
 
 Notes:
 
 - Temporary add-ons unload when Firefox closes. Re-load after restart
-  (takes 10 seconds), token is kept in extension storage.
+  (takes 10 seconds). Nothing to re-pair.
 - For a permanent install you need signing (Mozilla Add-ons) or
   Firefox Developer / ESR with `xpinstall.signatures.required = false`.
   That step needs internet once — skip it while offline.
 - The bridge is `http://127.0.0.1:51337` only. No data leaves your
-  machine. Endpoints: `GET /status`, `POST /tabs`, `GET /pending`,
-  `POST /ack`, `GET /tabs`, `POST /queue`.
+  machine. Websites are locked out by extension-origin check, so there is
+  no password to manage. Endpoints: `GET /status`, `POST /tabs`,
+  `GET /pending`, `POST /ack`, `GET /tabs`, `POST /queue`.
 - Keep one VS Code window owning the bridge. A second window shows a
   warning and falls back to copy+open.
 
@@ -162,7 +165,7 @@ Notes:
    (only the `background` key differs).
 2. Open `chrome://extensions`, enable Developer mode, **Load unpacked**,
    pick the `browser/` folder.
-3. Same token + Link flow as Firefox.
+3. Same as Firefox from there — no pairing, tabs self-link.
 
 **WXT later (optional):** when you have good internet, the same logic
 ports 1:1 to WXT (`entrypoints/background.ts`, one content file per
@@ -188,32 +191,29 @@ change it under File → Preferences → Keyboard Shortcuts, search
 “SelectBeam”.
 
 **The browser opened a new tab every time.**
-That means no tab is linked yet. Open the chat, use the companion popup
-→ Link this tab, then send again. Check **Show Browser Bridge Status**
-for live tabs. Live tabs expire after `liveTabTTLMinutes`.
+That means no tab is linked yet — the companion may have unloaded
+(temporary add-ons unload on Firefox restart) or the chat was closed.
+Reload in `about:debugging`, keep the chat open, send again. Check
+**Show Browser Bridge Status** for live tabs. Live tabs expire after
+`liveTabTTLMinutes`.
 
-**Companion says “Bridge unreachable”.**
+**Page badge says “VS Code bridge off?”.**
 Make sure VS Code is open (the bridge runs inside the extension),
 `selectbeam.bridgeEnabled` is on, and the port matches (`51337`).
-Only `127.0.0.1` works — that is on purpose.
-
-**Companion says “Bad token”.**
-Run **Show Browser Bridge Status** again (it copies a fresh token),
-paste it into the popup, Save, Link again.
+Only `127.0.0.1` works — that is on purpose. Click the badge to retry.
 
 **The browser opened but the chat box is empty.**
-Press `Ctrl+V` (`Cmd+V` on Mac) once in the chat box. Your code is in
-the clipboard. If needed, press “Copy again” in the VS Code notification.
-With the companion linked, wait ~2 seconds for auto-fill; if the site
-redesigned its input, only `browser/content.js` selectors need updating.
+Wait a few seconds — first-ever sends auto-fill when the editor loads
+(~30s budget). Your code is also in the clipboard: press `Ctrl+V`
+(`Cmd+V` on Mac) if you don't want to wait. If the site redesigned its
+input, only `browser/content.js` selectors need updating.
 
 **Tab is linked but never auto-fills.**
-Check the badge on the page: amber “not linked” means the token is
-missing — redo popup → Save → Link. Green but empty means the fill failed:
-the page tells you via toast, and after ~20s it asks for one manual paste.
-Reload the temporary add-on in `about:debugging` (it may have unloaded),
-then send again. Last resort: report the site + what the toast said —
-only the `SELECTORS` table in `browser/content.js` needs the new hook.
+Green badge but empty means the fill failed: the page tells you via toast,
+and after ~30s it asks for one manual paste. Reload the temporary add-on
+in `about:debugging` (it may have unloaded), then send again. Last resort:
+report the site + what the toast said — only the `SELECTORS` table in
+`browser/content.js` needs the new hook.
 
 **My terminal shows `bquote>` lines.**
 That means code was put into a plain shell instead of an AI tool.

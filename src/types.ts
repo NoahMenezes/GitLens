@@ -10,7 +10,9 @@ export type DefaultBrowser =
   | "chatgpt"
   | "claude"
   | "gemini"
-  | "deepseek";
+  | "deepseek"
+  | "grok"
+  | "copilot";
 
 export interface AgentDef {
   id: string;

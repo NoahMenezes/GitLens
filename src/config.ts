@@ -29,7 +29,9 @@ export function getAgentCommands(): Record<string, string> {
 }
 
 export function getDefaultBrowser(): DefaultBrowser {
-  return cfg().get<DefaultBrowser>("defaultBrowser", "ask");
+  // "last" = ask once, then automatic. The palette command can still force
+  // the picker (see resolveBrowser's forceAsk) so switching models is easy.
+  return cfg().get<DefaultBrowser>("defaultBrowser", "last");
 }
 
 export function getRememberBrowserChoice(): boolean {

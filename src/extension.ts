@@ -6,7 +6,7 @@
 //   platform.ts   Mac hints, sleep
 //   config.ts     all `selectbeam.*` settings reads
 //   payload.ts    code-block building, clipboard, optional instruction
-//   state.ts      workspace/global state (terminals, live tabs, token)
+//   state.ts      workspace/global state (terminals, last pick, live tabs)
 //   bridge.ts     localhost HTTP bridge + Show Bridge Status
 //   terminal.ts   terminal send path (target, agent guard, launch)
 //   browserSend.ts browser send path (resolve, tab reuse, open)

@@ -1,15 +1,14 @@
 # SelectBeam browser companion — Firefox setup (printable, offline)
 
-1. VS Code: `Ctrl+Shift+P` (`Cmd+Shift+P` on Mac) → 
-   **SelectBeam: Show Browser Bridge Status** → token auto-copied.
-2. Firefox: open `about:debugging#/runtime/this-firefox`.
-3. **Load Temporary Add-on** → pick `browser/manifest.json`.
-4. Open chat (`https://chatgpt.com/` etc.) → click SelectBeam Bridge icon.
-5. Paste token, port `51337` → **Save** → **Link this tab** → “Linked!”.
-6. VS Code: select code → `Ctrl+Alt+A` (`Cmd+Alt+A` Mac) → same provider.
-   SAME tab auto-fills in ~2s. No new tab.
-7. Not linked / closed / expired → new chat opens. Link it once, reuse after.
+No token, no pairing, nothing to type.
 
-Troubleshoot: “Bridge unreachable” = VS Code closed or wrong port.
-“Bad token” = re-run Show Bridge Status, paste fresh, Save + Link.
+1. Firefox: open `about:debugging#/runtime/this-firefox`.
+2. **Load Temporary Add-on** → pick `browser/manifest.json`.
+3. Open your chats (ChatGPT, Claude, Gemini, DeepSeek, Grok, Copilot).
+4. VS Code: select code → `Ctrl+Alt+A` (`Cmd+Alt+A` Mac) → pick an AI once.
+   SAME tab auto-fills in ~2s. No new tab. Every send after is one-tap.
+5. First send to a new AI opens its chat and auto-fills when it loads.
+   Switch AI anytime via palette → **SelectBeam: Send Selection to Browser AI**.
+
+Troubleshoot: badge says bridge off = VS Code closed or wrong port (`51337`).
 Temporary add-ons unload on Firefox restart — reload manifest (10s).

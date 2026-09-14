@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SelectBeam Bridge",
-  "version": "0.0.5",
+  "version": "0.0.3",
   "description": "Reuses your linked AI chat tab for SelectBeam sends (no new-tab spam). Localhost only, no cloud.",
   "permissions": ["storage", "tabs"],
   "host_permissions": [
@@ -9,7 +9,10 @@
     "https://chatgpt.com/*",
     "https://claude.ai/*",
     "https://gemini.google.com/*",
-    "https://chat.deepseek.com/*"
+    "https://chat.deepseek.com/*",
+    "https://grok.com/*",
+    "https://x.com/i/grok*",
+    "https://copilot.microsoft.com/*"
   ],
   "background": {
     "scripts": ["background.js"]
@@ -20,7 +23,10 @@
         "https://chatgpt.com/*",
         "https://claude.ai/*",
         "https://gemini.google.com/*",
-        "https://chat.deepseek.com/*"
+        "https://chat.deepseek.com/*",
+        "https://grok.com/*",
+        "https://x.com/i/grok*",
+        "https://copilot.microsoft.com/*"
       ],
       "js": ["content.js"],
       "run_at": "document_idle"
