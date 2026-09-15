@@ -1,0 +1,33 @@
+name: Publish extension
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - run: bun install --frozen-lockfile
+      - run: bun run check-types
+      - run: bun run package
+
+      # 1. VS Code Marketplace (VS Code, Cursor gallery sync, Windsurf gallery sync)
+      - name: Publish to VS Code Marketplace
+        run: bunx vsce publish --allow-missing-repository -p ${{ secrets.VSCE_PAT }}
+
+      # 2. Open VSX Registry (VSCodium, Gitpod, Theia, Eclipse, Positron, Antigravity via OpenVSX)
+      - name: Publish to Open VSX
+        run: bunx ovsx publish --allow-missing-repository -p ${{ secrets.OVSX_PAT }}
+
+      # 3. Attach the .vsix to the GitHub Release so Cursor / Windsurf /
+      #    Antigravity / VSCodium users can always "Install from VSIX" manually.
+      - name: Attach VSIX to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: "*.vsix"

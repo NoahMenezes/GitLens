@@ -16,6 +16,35 @@ You review it and press Enter yourself. SelectBeam never submits for you.
 
 Repo: https://github.com/NoahMenezes/SelectBeam
 
+## Install (VS Code, VSCodium, Cursor, Windsurf, Antigravity…)
+
+Same code, same `.vsix` — SelectBeam uses only stable VS Code APIs, so one
+build runs on every VS Code-compatible editor.
+
+| Editor | How to install |
+|---|---|
+| **VS Code** | Extensions view (`Ctrl+Shift+X`) → search `SelectBeam`, or `vsce publish` listing. |
+| **VSCodium** | Extensions view → search `SelectBeam` on **Open VSX** (`open-vsx.org`). VSCodium can't use Microsoft's gallery, so Open VSX is its native source. |
+| **Cursor** | Extensions view usually syncs the VS Marketplace listing — search `SelectBeam`. If a version lags, `Ctrl+Shift+P` → `Extensions: Install from VSIX…` with the `.vsix` from GitHub Releases. |
+| **Windsurf** | Same as Cursor: gallery search first, else `Install from VSIX…`. CLI: `windsurf --install-extension selectbeam-*.vsix`. |
+| **Antigravity** | `...` menu in Extensions view → `Install from VSIX…`, or CLI: `antigravity --install-extension selectbeam-*.vsix`. Open VSX search also works. |
+| **Theia / Gitpod / Eclipse / Positron** | Native Open VSX gallery — search `SelectBeam`. |
+| **Devin** | Not a marketplace editor — it works inside your repo. Run `code --install-extension selectbeam-*.vsix` in its environment, or add the `.vsix` to your devcontainer setup. |
+
+Maintainer notes (publishing both galleries):
+
+```bash
+vsce publish   # VS Code Marketplace (covers VS Code + Cursor/Windsurf gallery sync)
+ovsx publish   # Open VSX (covers VSCodium, Theia, Gitpod, Antigravity-via-OpenVSX)
+```
+
+First Open VSX release needs a one-time namespace claim
+(`ovsx create-namespace NoahMenezes`) plus `OVSX_PAT` from
+`open-vsx.org`. After that, pushing a `v*` tag runs
+`.github/workflows/publish.yml`, which publishes to **both** galleries and
+attaches the `.vsix` to the GitHub Release for manual installs.
+Not supported: Zed, Sublime, Neovim — different extension systems, not VSIX.
+
 ## Status
 
 - **VS Code extension:** v0.0.5, VS Code 1.85+. Terminal AI, browser AI, clipboard — all working.

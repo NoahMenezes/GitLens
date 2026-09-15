@@ -210,6 +210,9 @@
     "watch": "bun ./esbuild.js --watch",
     "package": "bun ./esbuild.js --production",
     "package-vsix": "vsce package --allow-missing-repository",
+    "publish:vscode": "vsce publish --allow-missing-repository",
+    "publish:openvsx": "ovsx publish --allow-missing-repository",
+    "publish:all": "bun run package && vsce publish --allow-missing-repository --packagePath ./selectbeam-0.0.5.vsix && ovsx publish ./selectbeam-0.0.5.vsix",
     "check-types": "tsc --noEmit",
     "test": "echo \"No tests yet (V1)\" && exit 0"
   },
@@ -217,6 +220,7 @@
     "@types/node": "^20.11.0",
     "@types/vscode": "^1.85.0",
     "esbuild": "^0.28.2",
+    "ovsx": "^1.2.0",
     "typescript": "^5.3.3"
   }
 }
