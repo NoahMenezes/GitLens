@@ -2,6 +2,10 @@
 
 All changes to SelectBeam will be listed here.
 
+## [0.0.4] — 2026-09-16
+
+- Store resubmit of 0.0.3 for AMO (0.0.3 was uploaded then deleted, AMO blocks reuse of deleted version numbers). No code change.
+
 ## [0.0.3] — 2026-09-15
 
 - Fixed companion paste: the chat box fill is now verified (text must
