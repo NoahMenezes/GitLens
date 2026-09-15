@@ -8,6 +8,7 @@
 //   payload.ts    code-block building, clipboard, optional instruction
 //   state.ts      workspace/global state (terminals, last pick, live tabs)
 //   bridge.ts     localhost HTTP bridge + Show Bridge Status
+//   systemBrowser.ts browser APP picker (Firefox / Edge / system) + launcher
 //   terminal.ts   terminal send path (target, agent guard, launch)
 //   browserSend.ts browser send path (resolve, tab reuse, open)
 //   commands.ts   sendSelection orchestration + chooseTarget

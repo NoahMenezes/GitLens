@@ -8,6 +8,7 @@ import {
   KEY_AGENT_MAP,
   KEY_FORCE_CLIPBOARD,
   KEY_LAST_BROWSER,
+  KEY_LAST_SYSTEM_BROWSER,
   KEY_LIVE_TABS,
   KEY_REMEMBERED_TERMINAL,
   LIVE_REUSE_WINDOW_MS,
@@ -90,6 +91,19 @@ export async function setLastBrowserId(
   browserId: string | undefined
 ): Promise<void> {
   await context.workspaceState.update(KEY_LAST_BROWSER, browserId);
+}
+
+export function getLastSystemBrowserId(
+  context: vscode.ExtensionContext
+): string | undefined {
+  return context.workspaceState.get<string | undefined>(KEY_LAST_SYSTEM_BROWSER);
+}
+
+export async function setLastSystemBrowserId(
+  context: vscode.ExtensionContext,
+  browserId: string | undefined
+): Promise<void> {
+  await context.workspaceState.update(KEY_LAST_SYSTEM_BROWSER, browserId);
 }
 
 // --- Live-tab memory (browser -> vscode direction) -------------------------

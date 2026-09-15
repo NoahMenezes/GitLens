@@ -1,6 +1,7 @@
 // SelectBeam — browser send path: one-tap, same-tab, every provider.
-// Clipboard is ALWAYS written first so nothing is ever lost. Every send is
-// ALSO queued on the bridge, so even a first-ever send to a new AI
+// Flow: pick AI chat -> pick browser app (Firefox / Edge / system) ->
+// pick Existing tab vs New tab. Clipboard is ALWAYS written first so
+// nothing is ever lost. Every send is ALSO queued on the bridge, so even a first-ever send to a new AI
 // auto-fills when its chat loads. First send opens a new chat; from the
 // second send on you choose Last used tab vs New chat. Never auto-submits.
 
@@ -26,6 +27,7 @@ import {
   setLiveTab,
 } from "./state";
 import { isBridgeOwner, queuePasteForBrowser, showBridgeStatus } from "./bridge";
+import { openUrlInSystemBrowser, resolveSystemBrowser } from "./systemBrowser";
 import type { BrowserDef } from "./types";
 
 // `selectbeam.sendToBrowser` (palette): ALWAYS shows the picker so switching
@@ -156,12 +158,20 @@ export async function sendToBrowserTarget(
 
   await vscode.env.clipboard.writeText(finalText);
 
+  // Step 2 (new): which browser APP opens the chat? Firefox / Edge / system.
+  // Esc here keeps the clipboard copy, queues nothing.
+  const systemApp = await resolveSystemBrowser(context);
+  if (!systemApp) {
+    return;
+  }
+  const appName = systemApp.label.replace(/^\$\([^)]+\)\s*/, "");
+
   const canQueue = isBridgeOwner() && getReuseBrowserTab();
   const live = getLiveTab(context, browser.id);
 
   // Second send onwards with a fresh tab: YOU choose — refill the last
-  // used tab, or open a brand-new chat. First send (no live tab) always
-  // opens a new chat, exactly like before.
+  // used tab, or open a brand-new chat in the picked browser app. First
+  // send (no live tab) always opens a new chat, exactly like before.
   if (live && canQueue) {
     interface ReusePick extends vscode.QuickPickItem {
       choice: "last" | "new";
@@ -170,18 +180,18 @@ export async function sendToBrowserTarget(
       await vscode.window.showQuickPick<ReusePick>(
         [
           {
-            label: "$(history) Last used tab",
-            description: `"${live.title || live.url}" (${ageLabel(live.updatedAt)}) — refill it`,
+            label: "$(history) Existing tab",
+            description: `"${live.title || live.url}" (${ageLabel(live.updatedAt)}) — refill it in ${appName}`,
             choice: "last",
           },
           {
-            label: "$(plus) New chat",
-            description: `Open a fresh ${browser.id} chat and fill it there`,
+            label: "$(plus) New tab",
+            description: `Open a fresh ${browser.id} tab in ${appName} and fill it there`,
             choice: "new",
           },
         ],
         {
-          placeHolder: `SelectBeam: refill your last ${browser.id} tab, or open a new chat?`,
+          placeHolder: `SelectBeam: refill your existing ${browser.id} tab in ${appName}, or open a new tab?`,
         }
       );
     if (!pick) {
@@ -192,7 +202,7 @@ export async function sendToBrowserTarget(
       // Quiet on purpose: the fill confirmation from the tab itself pops
       // the message in VS Code.
       vscode.window.setStatusBarMessage(
-        `$(globe) SelectBeam: sent ${fileRef} to ${browser.id} tab — filling…`,
+        `$(globe) SelectBeam: sent ${fileRef} to ${browser.id} tab in ${appName} — filling…`,
         5000
       );
       return;
@@ -201,7 +211,7 @@ export async function sendToBrowserTarget(
     // queue for it, then open it.
     await removeLiveTab(context, browser.id);
     queuePasteForBrowser(browser.id, finalText, fileRef);
-    await openFreshChat("new");
+    await openFreshChat("new", systemApp);
     return;
   }
 
@@ -210,23 +220,25 @@ export async function sendToBrowserTarget(
   if (canQueue) {
     queuePasteForBrowser(browser.id, finalText, fileRef);
   }
-  await openFreshChat(live ? "bridge-off" : "first");
+  await openFreshChat(live ? "bridge-off" : "first", systemApp);
 
-  // Opens a new chat URL. Shared by first-send, explicit new-chat, and
-  // bridge-off fallbacks — only the hint differs.
-  async function openFreshChat(reason: "first" | "new" | "bridge-off"): Promise<void> {
+  // Opens a new chat URL in the picked browser app. Shared by first-send,
+  // explicit new-tab, and bridge-off fallbacks — only the hint differs.
+  async function openFreshChat(
+    reason: "first" | "new" | "bridge-off",
+    app: NonNullable<Awaited<ReturnType<typeof resolveSystemBrowser>>>
+  ): Promise<void> {
     await setLiveTab(context, browser.id, getBrowserUrl(browser), "", true);
     const url: string = getBrowserUrl(browser);
     try {
-      const uri: vscode.Uri = vscode.Uri.parse(url);
-      const opened: boolean = await vscode.env.openExternal(uri);
+      const opened: boolean = await openUrlInSystemBrowser(url, app);
       if (opened) {
         const hint =
           reason === "new"
-            ? `Opening a fresh ${browser.id} chat — fills when it loads. Your old tab stays open.`
+            ? `Opening a fresh ${browser.id} tab in ${appName} — fills when it loads. Your old tab stays open.`
             : reason === "first"
-              ? `Opening ${browser.id} — code fills itself when the chat loads.`
-              : `Bridge is ${isBridgeOwner() ? "off" : "owned by another window"} — opened ${browser.id} normally. Press ${pasteHint()} there.`;
+              ? `Opening ${browser.id} in ${appName} — code fills itself when the chat loads.`
+              : `Bridge is ${isBridgeOwner() ? "off" : "owned by another window"} — opened ${browser.id} in ${appName} normally. Press ${pasteHint()} there.`;
         void vscode.window.showInformationMessage(
           `SelectBeam: ${fileRef} copied — ${hint}`,
           "Copy again",
@@ -239,7 +251,7 @@ export async function sendToBrowserTarget(
           }
         });
         vscode.window.setStatusBarMessage(
-          `$(globe) SelectBeam: opened ${browser.id} — ${reason === "bridge-off" ? `code is in your clipboard, press ${pasteHint()} there` : "auto-fill queued"}`,
+          `$(globe) SelectBeam: opened ${browser.id} in ${appName} — ${reason === "bridge-off" ? `code is in your clipboard, press ${pasteHint()} there` : "auto-fill queued"}`,
           5000
         );
       } else {

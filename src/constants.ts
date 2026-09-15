@@ -1,7 +1,7 @@
 // SelectBeam — constants: storage keys, limits, agent + browser catalogs.
 // No vscode import; pure data so every module can share it.
 
-import type { AgentDef, BrowserDef } from "./types";
+import type { AgentDef, BrowserDef, SystemBrowserDef } from "./types";
 
 // --- State keys ------------------------------------------------------------
 
@@ -14,6 +14,8 @@ export const KEY_FORCE_CLIPBOARD = "selectbeam.forceClipboard";
 export const KEY_AGENT_MAP = "selectbeam.terminalAgents";
 // Last browser AI picked (e.g. "chatgpt"). Used by `defaultBrowser: "last"`.
 export const KEY_LAST_BROWSER = "selectbeam.lastBrowserId";
+// Last system browser app picked (e.g. "firefox"). Used by `systemBrowser: "last"`.
+export const KEY_LAST_SYSTEM_BROWSER = "selectbeam.lastSystemBrowserId";
 // Live-tab memory: provider -> LiveTab (global-scoped so the companion
 // popup works across windows).
 export const KEY_LIVE_TABS = "selectbeam.liveTabs";
@@ -67,6 +69,23 @@ export const BROWSERS: BrowserDef[] = [
   { id: "grok", label: "$(globe) Grok", description: "Copy + open grok.com", defaultUrl: "https://grok.com/" },
   { id: "copilot", label: "$(globe) Copilot", description: "Copy + open copilot.microsoft.com", defaultUrl: "https://copilot.microsoft.com/" },
 ];
+
+// Which installed browser app to open the chat URL in. `system` uses the
+// OS default via vscode.openExternal. Others launch that app's binary
+// directly (Linux / Mac / Windows covered in systemBrowser.ts). Add new
+// entries here and they appear in the picker + settings automatically.
+export const SYSTEM_BROWSERS: SystemBrowserDef[] = [
+  { id: "system", label: "$(globe) System default", description: "OS default browser (openExternal)" },
+  { id: "firefox", label: "$(globe) Firefox", description: "Open in Firefox" },
+  { id: "edge", label: "$(globe) Edge", description: "Open in Microsoft Edge" },
+  { id: "chrome", label: "$(globe) Chrome", description: "Open in Google Chrome" },
+  { id: "chromium", label: "$(globe) Chromium", description: "Open in Chromium" },
+  { id: "brave", label: "$(globe) Brave", description: "Open in Brave" },
+];
+
+export function findSystemBrowser(id: string): SystemBrowserDef | undefined {
+  return SYSTEM_BROWSERS.find((b): boolean => b.id === id);
+}
 
 export function isKnownProvider(id: string): boolean {
   return BROWSERS.some((b): boolean => b.id === id);

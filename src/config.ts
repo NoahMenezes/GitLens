@@ -2,7 +2,7 @@
 // live next to package.json and behavior modules stay thin.
 
 import * as vscode from "vscode";
-import type { BrowserDef, DefaultBrowser, DefaultTarget } from "./types";
+import type { BrowserDef, DefaultBrowser, DefaultSystemBrowser, DefaultTarget } from "./types";
 
 function cfg(): vscode.WorkspaceConfiguration {
   return vscode.workspace.getConfiguration("selectbeam");
@@ -36,6 +36,16 @@ export function getDefaultBrowser(): DefaultBrowser {
 
 export function getRememberBrowserChoice(): boolean {
   return cfg().get<boolean>("rememberBrowserChoice", true);
+}
+
+export function getDefaultSystemBrowser(): DefaultSystemBrowser {
+  // "last" = ask once, then automatic. "ask" shows the Firefox / Edge
+  // picker every time. Or fix one app.
+  return cfg().get<DefaultSystemBrowser>("systemBrowser", "ask");
+}
+
+export function getRememberSystemBrowserChoice(): boolean {
+  return cfg().get<boolean>("rememberSystemBrowserChoice", true);
 }
 
 export function getReuseBrowserTab(): boolean {

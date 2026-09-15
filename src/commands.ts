@@ -9,6 +9,7 @@ import {
   isForceClipboard,
   setForceClipboard,
   setLastBrowserId,
+  setLastSystemBrowserId,
   setRememberedTerminal,
   clearLiveTabs,
 } from "./state";
@@ -127,6 +128,7 @@ export async function chooseTarget(
     await setForceClipboard(context, false);
     await clearAgentMap(context);
     await setLastBrowserId(context, undefined);
+    await setLastSystemBrowserId(context, undefined);
     await clearLiveTabs(context);
     clearPendingQueue();
     vscode.window.setStatusBarMessage(

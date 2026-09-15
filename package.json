@@ -158,6 +158,17 @@
           "default": true,
           "description": "Remember your browser pick so Last works."
         },
+        "selectbeam.systemBrowser": {
+          "type": "string",
+          "enum": ["ask", "last", "system", "firefox", "edge", "chrome", "chromium", "brave"],
+          "default": "ask",
+          "description": "Which browser app opens the chat. Ask shows Firefox / Edge picker every time. Last reuses your last app. Or fix one."
+        },
+        "selectbeam.rememberSystemBrowserChoice": {
+          "type": "boolean",
+          "default": true,
+          "description": "Remember your browser app pick so Last works."
+        },
         "selectbeam.browserUrls": {
           "type": "object",
           "default": {},

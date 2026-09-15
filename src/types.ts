@@ -14,6 +14,22 @@ export type DefaultBrowser =
   | "grok"
   | "copilot";
 
+export type DefaultSystemBrowser =
+  | "ask"
+  | "last"
+  | "system"
+  | "firefox"
+  | "edge"
+  | "chrome"
+  | "chromium"
+  | "brave";
+
+export interface SystemBrowserDef {
+  id: Exclude<DefaultSystemBrowser, "ask" | "last">;
+  label: string;
+  description: string;
+}
+
 export interface AgentDef {
   id: string;
   label: string;
