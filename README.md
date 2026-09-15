@@ -130,7 +130,7 @@ To reset everything, run **SelectBeam: Choose Send Target** and pick
 **Auto**. That clears the saved terminal, the saved browser, live tabs,
 and the clipboard-only mode.
 
-## Browser companion (no internet needed, no setup)
+## Browser companion (recommended: 1-click store install)
 
 The companion is vanilla MV3 (`browser/` folder, no `npm install`, no build).
 One build per engine covers every browser on it. It works with ChatGPT,
@@ -139,7 +139,22 @@ Claude, Gemini, DeepSeek, Grok, and Copilot — every model the same way.
 **There is nothing to pair.** No token, no account, nothing to type. Every
 chat tab links itself the moment it loads.
 
-**Chromium family — Chrome, Edge, Brave, Opera, Vivaldi, Arc:**
+> TODO(publisher): replace the two `REPLACE-ME` links below with your real
+> store URLs, then republish the VSIX. Everything else already works.
+> - Edge URL: find it in Partner Center (see below) — looks like
+>   `https://microsoftedge.microsoft.com/addons/detail/<name>/<id>`
+> - Firefox URL: find it in AMO Developer Hub — looks like
+>   `https://addons.mozilla.org/firefox/addon/<your-slug>/`
+
+| Browser | Recommended install | Fallback (no store needed) |
+|---|---|---|
+| **Edge** | [Install from Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/REPLACE-ME-WITH-YOUR-EDGE-LISTING-ID) | `edge://extensions` → Developer mode → Load unpacked → `browser/` folder (use `browser/manifest.chrome.json` as `browser/manifest.json`) |
+| **Firefox, Dev Edition, Zen, LibreWolf, Waterfox, Floorp** | [Install from Firefox AMO](https://addons.mozilla.org/firefox/addon/REPLACE-ME-WITH-YOUR-AMO-SLUG/) | `about:debugging#/runtime/this-firefox` → Load Temporary Add-on → `browser/manifest.json` (or `manifest.firefox.json`) |
+| **Chrome, Brave, Opera, Vivaldi, Arc** | Chrome Web Store listing covers all of these at once (see “Brave and other browsers” below — Edge Add-ons does NOT install in Brave/Chrome) | Same unpacked flow as Edge (Developer mode → Load unpacked → `browser/` with the Chromium manifest). Persists across restarts, unlike Firefox temporary installs. |
+
+After installing, open your chats, keep them open, send from VS Code — tabs self-link.
+
+**Chromium family — Chrome, Edge, Brave, Opera, Vivaldi, Arc (fallback detail):**
 
 1. Copy `browser/manifest.chrome.json` over `browser/manifest.json`
    (only the `background` key differs).
@@ -157,13 +172,30 @@ chat tab links itself the moment it loads.
 
 3. Open your chats, keep them open, send from VS Code — tabs self-link.
 
-**Firefox family — Firefox, Dev Edition, Zen, LibreWolf, Waterfox, Floorp:**
+**Firefox family — Firefox, Dev Edition, Zen, LibreWolf, Waterfox, Floorp (fallback detail):**
 
 1. Open `about:debugging#/runtime/this-firefox`.
 2. Click **Load Temporary Add-on**, pick `browser/manifest.json`.
 3. Open your chats, keep them open, send from VS Code — tabs self-link.
    (Temporary add-ons unload on browser restart — re-load takes 10 seconds.
-   Nothing to re-pair.)
+   Nothing to re-pair. The AMO store install above persists across restarts.)
+
+**Brave and other browsers — how to set up today:**
+
+- **Brave:** no Brave-specific build needed (same Chromium code as Chrome).
+  Until the Chrome Web Store listing is live, use Load unpacked:
+  `brave://extensions` → Developer mode → Load unpacked → `browser/`
+  (with `manifest.chrome.json` as `manifest.json`). Pin it so you see the
+  green “linked ✓” badge. If a fill ever misses: Shields lion icon →
+  Shields down for that chat site → reload → send again. Full steps:
+  `browser/CHROMIUM-SETUP.md`. Once you publish to CWS, Brave installs
+  from there in 1 click — the Edge Add-ons URL will NOT install in Brave.
+- **Chrome / Vivaldi / Arc:** same as Brave (CWS once live, unpacked today).
+- **Opera / GX:** same, plus one-time “Install Chrome Extensions” from
+  Opera Add-ons if you want the CWS route. Unpacked always works.
+- **Firefox forks (Zen, LibreWolf, Waterfox, Floorp, Dev Edition):**
+  same AMO listing as Firefox — install once, works everywhere.
+  See `browser/FIREFOX-SETUP.md`.
 
 **Safari:** coming later — it needs an Xcode wrapper project and a Mac to
 test. The companion code is already portable (vanilla JS, no timers in the
@@ -180,8 +212,8 @@ Selection to Browser AI**, which always lets you pick (and updates last).
 
 Notes:
 
-- For a permanent install you need store signing (needs internet once).
-  Until then, developer/temporary loading above is the daily flow.
+- For a permanent install use the store links above (auto-updates, survives
+  restarts). Developer/temporary loading is the offline fallback.
 - The bridge is `http://127.0.0.1:51337` only. No data leaves your
   machine. Websites are locked out by extension-origin check, so there is
   no password to manage. Endpoints: `GET /status`, `POST /tabs`,

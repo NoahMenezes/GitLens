@@ -17,6 +17,35 @@
   // How many polls (~2s each) we retry a failed paste before giving up and
   // asking for a manual paste. ~15 tries ~= 30 seconds (covers cold loads).
   var MAX_ATTEMPTS = 15;
+  // Brave-only: longer budget (~60s). execCommand('insertText') is disabled
+  // earlier in Brave than in Chrome/Edge, and Gemini's rich-textarea input
+  // lives in a shadow DOM, so first paints need more polls. Non-Brave
+  // browsers keep MAX_ATTEMPTS exactly — this changes nothing for them.
+  var BRAVE_MAX_ATTEMPTS = 30;
+  var IS_BRAVE = (function () {
+    try {
+      if (navigator.brave && typeof navigator.brave.isBrave === "function") {
+        return true;
+      }
+    } catch (e) { /* fall through to UA check */ }
+    try {
+      return /Brave/i.test(navigator.userAgent || "") ||
+        /Brave/i.test(navigator.vendor || "");
+    } catch (e) {
+      return false;
+    }
+  })();
+  function maxAttempts() {
+    return IS_BRAVE ? BRAVE_MAX_ATTEMPTS : MAX_ATTEMPTS;
+  }
+  function braveDebug() {
+    if (!IS_BRAVE || typeof console === "undefined" || !console.debug) {
+      return;
+    }
+    try {
+      console.debug.apply(console, ["[selectbeam:brave]"].concat([].slice.call(arguments)));
+    } catch (e) { /* logging never breaks paste */ }
+  }
 
   function getApi() {
     if (typeof browser !== "undefined" && browser.runtime) {
@@ -207,6 +236,103 @@
     return best;
   }
 
+  // ---- Brave-only: shadow-DOM-piercing search (Gemini rich-textarea) ----
+  // document.querySelectorAll cannot see inside shadow roots. Non-Brave
+  // browsers never call this — findChatBox() above is byte-identical.
+  function queryAllDeep(root, selector, out) {
+    out = out || [];
+    var els;
+    try {
+      els = root.querySelectorAll(selector);
+    } catch (e) {
+      els = [];
+    }
+    for (var k = 0; k < els.length; k++) {
+      out.push(els[k]);
+    }
+    var all;
+    try {
+      all = root.querySelectorAll("*");
+    } catch (e) {
+      return out;
+    }
+    for (var n = 0; n < all.length; n++) {
+      var sr = null;
+      try {
+        sr = all[n].shadowRoot;
+      } catch (e) {
+        sr = null;
+      }
+      if (sr) {
+        queryAllDeep(sr, selector, out);
+      }
+    }
+    return out;
+  }
+
+  function shadowInnerEditable(el) {
+    // A wrapper (e.g. <rich-textarea>) whose real editor is in its shadow.
+    var sr = null;
+    try {
+      sr = el.shadowRoot;
+    } catch (e) {
+      sr = null;
+    }
+    if (!sr || !sr.querySelector) {
+      return null;
+    }
+    return sr.querySelector(
+      "div[contenteditable='true'], [contenteditable='plaintext-only'], " +
+      "div[role='textbox'], textarea"
+    );
+  }
+
+  function findChatBoxBrave() {
+    var list = SELECTORS[PROVIDER] || ["div[role='textbox']", "textarea", "div[contenteditable='true']"];
+    var best = null;
+    var bestArea = 0;
+    for (var i = 0; i < list.length; i++) {
+      var els = queryAllDeep(document, list[i]);
+      for (var j = 0; j < els.length; j++) {
+        var shadowEd = shadowInnerEditable(els[j]);
+        var cand = unwrap(shadowEd || els[j]);
+        if (!cand || !isVisible(cand)) {
+          continue;
+        }
+        if (cand !== els[j] || shadowEd) {
+          return cand; // drilled into a real inner editor — trust it
+        }
+        var a = area(cand);
+        if (!best || a > bestArea) {
+          best = cand;
+          bestArea = a;
+        }
+      }
+      if (best && i < 2) {
+        return best;
+      }
+    }
+    return best;
+  }
+
+  // Brave: deep search first, shared search as fallback. Non-Brave: shared
+  // search only, exactly as before.
+  function resolveBox() {
+    if (!IS_BRAVE) {
+      return findChatBox();
+    }
+    var deep = null;
+    try {
+      deep = findChatBoxBrave();
+    } catch (e) {
+      deep = null;
+    }
+    if (deep) {
+      return deep;
+    }
+    return findChatBox();
+  }
+
   function boxText(el) {
     if (!el) {
       return "";
@@ -307,6 +433,83 @@
       tryAppendText(el, text);
   }
 
+  // ---- Brave-only: model-aware insert (ProseMirror/Lexical/Slate) ----
+  // Brave disables document.execCommand('insertText') earlier than
+  // Chrome/Edge, so Strategy 1 fails and the raw text-node append (Strategy
+  // 3) is rejected by the editor model. This dispatches the beforeinput +
+  // input events with inputType 'insertText' that these editors actually
+  // listen for, with the caret placed in the deepest paragraph. Falls back
+  // to the shared pipeline — never replaces it. Non-Brave never calls this.
+  function deepestEditableNode(el) {
+    if (!el || !el.querySelector) {
+      return el;
+    }
+    var inner = el.querySelector(
+      "p, div[data-lexical-text='true'], div[data-slate-node='text'], " +
+      "div.ProseMirror p, span[data-lexical-text='true']"
+    );
+    return inner || el;
+  }
+
+  function tryBraveInputEvent(el, text) {
+    var tag = (el.tagName || "").toLowerCase();
+    if (tag === "textarea" || tag === "input") {
+      return false; // native setter path covers these; don't interfere
+    }
+    try {
+      var target = deepestEditableNode(el);
+      target.focus();
+      var sel = window.getSelection();
+      var range = document.createRange();
+      range.selectNodeContents(target);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+      var before = null;
+      try {
+        before = new InputEvent("beforeinput", {
+          bubbles: true, cancelable: true, inputType: "insertText", data: text
+        });
+      } catch (e) {
+        before = new Event("beforeinput", { bubbles: true, cancelable: true });
+      }
+      target.dispatchEvent(before);
+      var evt = null;
+      try {
+        evt = new InputEvent("input", {
+          bubbles: true, inputType: "insertText", data: text
+        });
+      } catch (e) {
+        evt = new Event("input", { bubbles: true });
+      }
+      // Insert via the Selection API so the editor model observes a real
+      // mutation, then notify listeners. If the editor vetoes (cancelled
+      // beforeinput), verified() fails and the caller retries.
+      var cancelled = before && before.defaultPrevented;
+      if (!cancelled) {
+        range.insertNode(document.createTextNode(text));
+        range.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+      target.dispatchEvent(evt);
+      el.scrollTop = el.scrollHeight;
+      var ok = verified(el, text);
+      braveDebug("tryBraveInputEvent", PROVIDER, tag, ok ? "ok" : "miss");
+      return ok;
+    } catch (e) {
+      braveDebug("tryBraveInputEvent error", String((e && e.message) || e));
+      return false;
+    }
+  }
+
+  function pasteIntoBoxBrave(el, text) {
+    if (tryBraveInputEvent(el, text)) {
+      return true;
+    }
+    return pasteIntoBox(el, text); // shared pipeline as fallback
+  }
+
   function toast(msg, ms) {
     try {
       var id = "selectbeam-toast";
@@ -384,6 +587,24 @@
   }
 
   function giveUpManual(item) {
+    // Brave-only: NEVER drop the queue — Shields/logged-out landings can
+    // delay the editor past the budget. Keep the item queued so the next
+    // poll or badge click still fills it. Other browsers: unchanged below.
+    if (IS_BRAVE) {
+      attempts[item.id] = BRAVE_MAX_ATTEMPTS; // cap, keep retrying silently
+      if (!toastedManual[item.id]) {
+        toastedManual[item.id] = true;
+        toast(
+          "SelectBeam (Brave): still trying to fill this chat — " +
+          "Shields down + logged in works best. Your code IS copied — press " +
+          (navigator.platform.indexOf("Mac") !== -1 ? "Cmd+V" : "Ctrl+V") +
+          " if needed, or click the green badge to retry. (" + (item.fileRef || PROVIDER) + ")",
+          8000
+        );
+      }
+      braveDebug("keep-queued", item.id, PROVIDER);
+      return;
+    }
     ack(item.id);
     delete attempts[item.id];
     if (!toastedManual[item.id]) {
@@ -406,29 +627,37 @@
     }
     for (var i = 0; i < items.length; i++) {
       var item = items[i];
-      var box = findChatBox();
+      var box = resolveBox();
       if (!box) {
         attempts[item.id] = (attempts[item.id] || 0) + 1;
         if (attempts[item.id] === 2 && !toastedNoBox[item.id]) {
           toastedNoBox[item.id] = true;
           toast("SelectBeam: code arrived but the chat box isn't ready — keeping it queued, it will fill when the editor loads.");
         }
-        if (attempts[item.id] > MAX_ATTEMPTS) {
+        if (attempts[item.id] > maxAttempts()) {
           giveUpManual(item);
         }
         break; // same box for all items — retry next poll
       }
       var text = (i > 0 ? "\n\n" : "") + item.text;
-      if (pasteIntoBox(box, text)) {
+      var filledOk = IS_BRAVE ? pasteIntoBoxBrave(box, text) : pasteIntoBox(box, text);
+      if (filledOk) {
         delete attempts[item.id];
         await ack(item.id);
         toast("SelectBeam filled code (" + (item.fileRef || PROVIDER) + ") — review & submit yourself.");
         // Tell VS Code it landed: it refreshes the remembered tab and
         // messages you back there. Best-effort — the code is in regardless.
         void sendMsg({ type: "filled", provider: PROVIDER, fileRef: item.fileRef || "" });
+        // Brave-only: bring the filled tab to front (asked Yes). The
+        // background owns tab focus; content can only request it.
+        if (IS_BRAVE) {
+          try {
+            await sendMsg({ type: "focusTab" });
+          } catch (e) { /* focus is best-effort; fill already landed */ }
+        }
       } else {
         attempts[item.id] = (attempts[item.id] || 0) + 1;
-        if (attempts[item.id] > MAX_ATTEMPTS) {
+        if (attempts[item.id] > maxAttempts()) {
           giveUpManual(item);
         }
         break; // retry next poll until budget runs out

@@ -126,6 +126,32 @@ async function bye(msg, sender, tabId) {
   return { ok: true };
 }
 
+// Bring the just-filled chat tab to front. Requested ONLY by the Brave
+// content branch after a verified fill (user asked Yes). Chrome/Edge/Firefox
+// never send this type, so they are unaffected. Needs only the existing
+// "tabs" permission — no manifest change.
+async function focusTab(msg, sender) {
+  try {
+    const tabId = sender && sender.tab && sender.tab.id;
+    const windowId = sender && sender.tab && sender.tab.windowId;
+    if (typeof tabId === "number" && api.tabs && api.tabs.update) {
+      const u = api.tabs.update(tabId, { active: true });
+      if (u && typeof u.then === "function") {
+        await u;
+      }
+    }
+    if (typeof windowId === "number" && api.windows && api.windows.update) {
+      const w = api.windows.update(windowId, { focused: true });
+      if (w && typeof w.then === "function") {
+        await w;
+      }
+    }
+    return { ok: true, focused: true };
+  } catch {
+    return { ok: false }; // focus is best-effort; the fill already landed
+  }
+}
+
 // Popup says: "how are we?" -> bridge health + live tabs.
 async function status() {
   const port = await getPort();
@@ -140,7 +166,7 @@ async function status() {
   return { port, health, liveTabs };
 }
 
-const handlers = { hb: heartbeat, poll, ack, filled, bye, status };
+const handlers = { hb: heartbeat, poll, ack, filled, bye, status, focusTab };
 
 function onMessage(msg, sender, sendResponse) {
   const fn = msg && handlers[msg.type];

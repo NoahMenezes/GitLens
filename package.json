@@ -109,7 +109,7 @@
           {
             "id": "selectbeam.step.companion",
             "title": "Link your browser (once)",
-            "description": "In Firefox open about:debugging, Load Temporary Add-on, pick browser/manifest.json. Then just keep a chat tab open.",
+            "description": "Recommended: install from Edge Add-ons (Edge) or Firefox AMO (Firefox/Zen) — links in Details. Brave/Chrome use Chrome Web Store or Load unpacked browser/ folder. Then just keep a chat tab open.",
             "media": {
               "markdown": "walkthroughs/step-companion.md"
             }
