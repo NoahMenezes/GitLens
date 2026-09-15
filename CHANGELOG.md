@@ -2,6 +2,12 @@
 
 All changes to SelectBeam will be listed here.
 
+## [0.0.5] — 2026-09-15
+
+- New system-browser picker: AI -> browser app -> Existing tab / New tab. Supports system default, Firefox, Edge, Chrome, Chromium, Brave (`selectbeam.systemBrowser` + `rememberSystemBrowserChoice`). Missing binary falls back to system default, code never lost.
+- Edge Add-ons store submission (Chromium `service_worker` build). Firefox AMO + Edge done, Chrome Web Store covers Brave/Chromium.
+- Marketplace description refresh for the new flow.
+
 ## [0.0.4] — 2026-09-16
 
 - Store resubmit of 0.0.3 for AMO (0.0.3 was uploaded then deleted, AMO blocks reuse of deleted version numbers). No code change.

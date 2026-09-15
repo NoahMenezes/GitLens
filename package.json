@@ -1,8 +1,8 @@
 {
   "name": "selectbeam",
   "displayName": "SelectBeam",
-  "description": "Beam your code straight to AI — no copy-paste, no tab-switching.",
-  "version": "0.0.4",
+  "description": "Send code to terminal AI or browser AI in Firefox, Edge, Chrome, Brave — same tab every time. No copy-paste.",
+  "version": "0.0.5",
   "publisher": "NoahMenezes",
   "license": "MIT",
   "icon": "icon.png",
@@ -41,6 +41,13 @@
     "vscode": "^1.85.0"
   },
   "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished",
+    "onCommand:selectbeam.sendSelection",
+    "onCommand:selectbeam.sendToBrowser",
+    "onCommand:selectbeam.chooseTarget",
+    "onCommand:selectbeam.showBridgeStatus"
+  ],
   "contributes": {
     "commands": [
       {

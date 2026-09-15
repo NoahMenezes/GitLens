@@ -1,6 +1,6 @@
 # SelectBeam
 
-> Highlight code, press one shortcut, and your code is ready for AI. No copy-paste.
+> Highlight code, press one shortcut, send it to terminal AI or browser AI in Firefox, Edge, Chrome, Brave — same tab every time. No copy-paste.
 
 SelectBeam takes the code you selected and hands it to an AI for you, along
 with the file name and line numbers so the AI knows where it came from.
@@ -77,8 +77,10 @@ The shortcut only works when text is highlighted. It is 3 keys on purpose
 - Browser with companion: your code is sent to the same tab and
   auto-fills there in ~2 seconds — no questions, no pasting. Still review
   it yourself — SelectBeam never presses Enter for you. First-ever send
-  to a new AI opens its chat and auto-fills when it loads. Second send
-  onwards you choose: **Last used tab** or **New chat**.
+  to a new AI picks the browser app (Firefox, Edge, Chrome, Brave…),
+  opens its chat and auto-fills when it loads. Second send
+  onwards you choose: **Existing tab** or **New tab** — no new tabs unless you ask,
+  no pasting, no questions. Set `selectbeam.systemBrowser: last` to skip the app picker.
 
 ## Mac keys
 
@@ -116,6 +118,8 @@ for most people.
 | `selectbeam.agentCommands` | `{}` | Your binary is named differently? Map it here, e.g. `{ "copilot": "gh copilot" }`. |
 | `selectbeam.defaultBrowser` | `"last"` | Ask once, then automatic. `"ask"` asks every time. Or fix one: `"chatgpt"`, `"claude"`, `"gemini"`, `"deepseek"`, `"grok"`, `"copilot"`. The palette command always lets you pick (and updates last). |
 | `selectbeam.rememberBrowserChoice` | `true` | Remembers your browser pick so `"last"` works. |
+| `selectbeam.systemBrowser` | `"ask"` | Which browser app opens the chat: `"ask"`, `"last"`, `"system"`, `"firefox"`, `"edge"`, `"chrome"`, `"chromium"`, `"brave"`. Pick the AI, then the app, then Existing tab / New tab. |
+| `selectbeam.rememberSystemBrowserChoice` | `true` | Remembers your browser app pick so `"last"` skips the app picker. |
 | `selectbeam.browserUrls` | `{}` | If a chat site address changes, write it here. Example: `{ "deepseek": "https://chat.deepseek.com/" }`. |
 | `selectbeam.reuseBrowserTab` | `true` | Reuse the linked browser tab instead of opening a new tab every time. Needs the companion. |
 | `selectbeam.liveTabTTLMinutes` | `60` | How long a linked tab counts as fresh. After this, a new chat is opened. |

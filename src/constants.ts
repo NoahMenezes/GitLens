@@ -25,7 +25,7 @@ export const EXT_ORIGIN_PREFIXES = ["moz-extension://", "chrome-extension://"];
 
 // --- Bridge limits ---------------------------------------------------------
 
-export const BRIDGE_VERSION = "0.0.4";
+export const BRIDGE_VERSION = "0.0.5";
 // Max queued pastes kept in memory (temporary, not persisted).
 export const MAX_PENDING = 20;
 // Reuse window: a tab only counts as "the same tab" if it heartbeated
