@@ -2,6 +2,27 @@
 
 All changes to SelectBeam will be listed here.
 
+## [Unreleased] — cleanup + Windows fix
+
+- Removed all code comments (archived in `docs/CODE-NOTES.md`) and shortened
+  sources ~30% with identical behavior and messages. README rewritten to current
+  status and trimmed.
+- Fixed: named browser apps (Brave/Chrome/Edge/Firefox) now resolve via
+  well-known Windows install paths, not just PATH. Falls back to system default
+  as before.
+- Fixed: collapsed the dead `terminal`/`auto` branch split in `sendSelection`
+  (both did the same launch flow).
+
+- Brave now auto-pastes like Chrome/Edge: Brave-gated branch in `browser/content.js`
+  (shadow-DOM search for Gemini `rich-textarea`, `beforeinput`+`insertText` insert for
+  ProseMirror/Lexical/Slate editors, longer retry, queue never dropped, badge-click retry).
+  Shared Chrome/Edge/Firefox paths byte-identical — zero regression risk.
+- `browser/background.js`: Brave-only `focusTab` brings the filled tab to front.
+- New `selectbeam-bridge-brave-0.0.4.zip` + `browser/manifest.brave.json` +
+  `browser/build-brave-zip.sh`. Brave loads via `brave://extensions` → Load unpacked.
+- New `browser/CWS-LISTING.md`: copy-paste Chrome Web Store listing (one listing covers
+  Brave + Chrome + Opera + Vivaldi + Arc) for when you're ready to post.
+
 ## [0.0.5] — 2026-09-15
 
 - New system-browser picker: AI -> browser app -> Existing tab / New tab. Supports system default, Firefox, Edge, Chrome, Chromium, Brave (`selectbeam.systemBrowser` + `rememberSystemBrowserChoice`). Missing binary falls back to system default, code never lost.

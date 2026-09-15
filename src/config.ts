@@ -1,6 +1,3 @@
-// SelectBeam — all `selectbeam.*` settings read in one place, so defaults
-// live next to package.json and behavior modules stay thin.
-
 import * as vscode from "vscode";
 import type { BrowserDef, DefaultBrowser, DefaultSystemBrowser, DefaultTarget } from "./types";
 
@@ -29,8 +26,6 @@ export function getAgentCommands(): Record<string, string> {
 }
 
 export function getDefaultBrowser(): DefaultBrowser {
-  // "last" = ask once, then automatic. The palette command can still force
-  // the picker (see resolveBrowser's forceAsk) so switching models is easy.
   return cfg().get<DefaultBrowser>("defaultBrowser", "last");
 }
 
@@ -39,8 +34,6 @@ export function getRememberBrowserChoice(): boolean {
 }
 
 export function getDefaultSystemBrowser(): DefaultSystemBrowser {
-  // "last" = ask once, then automatic. "ask" shows the Firefox / Edge
-  // picker every time. Or fix one app.
   return cfg().get<DefaultSystemBrowser>("systemBrowser", "ask");
 }
 
@@ -66,13 +59,7 @@ export function getBridgePortSetting(): number {
 }
 
 export function getBrowserUrl(browser: BrowserDef): string {
-  const overrides: Record<string, string> = cfg().get<Record<string, string>>(
-    "browserUrls",
-    {}
-  );
+  const overrides: Record<string, string> = cfg().get<Record<string, string>>("browserUrls", {});
   const override: string | undefined = overrides[browser.id];
-  if (override && override.trim().length > 0) {
-    return override.trim();
-  }
-  return browser.defaultUrl;
+  return override && override.trim().length > 0 ? override.trim() : browser.defaultUrl;
 }

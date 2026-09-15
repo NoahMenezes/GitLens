@@ -1,6 +1,4 @@
 {
-  // Launches a sandboxed VS Code window ("Extension Development Host")
-  // with SelectBeam loaded from this folder. Press F5 to start.
   "version": "0.2.0",
   "configurations": [
     {
@@ -8,12 +6,8 @@
       "type": "extensionHost",
       "request": "launch",
       "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
-      // Pick up sourcemaps from the esbuild bundle for breakpoints.
       "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-      // Runs the default build task (bun run watch) before launching.
       "preLaunchTask": "${defaultBuildTask}",
-      // Silence harmless Node deprecation noise (e.g. DEP0169 `url.parse()`,
-      // which comes from VS Code's own host — not from this extension).
       "env": {
         "NODE_NO_WARNINGS": "1"
       }

@@ -1,4 +1,3 @@
 {
-  // Recommended extensions for hacking on SelectBeam itself.
   "recommendations": ["dbaeumer.vscode-eslint"]
 }

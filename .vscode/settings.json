@@ -1,5 +1,4 @@
 {
-  // Format + organize imports on save for a tidy codebase.
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
     "source.organizeImports": "explicit"

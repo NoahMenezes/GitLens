@@ -1,50 +1,19 @@
-// SelectBeam — constants: storage keys, limits, agent + browser catalogs.
-// No vscode import; pure data so every module can share it.
-
 import type { AgentDef, BrowserDef, SystemBrowserDef } from "./types";
 
-// --- State keys ------------------------------------------------------------
-
-// Terminal name -> remembered target terminal (workspace-scoped).
 export const KEY_REMEMBERED_TERMINAL = "selectbeam.rememberedTerminalName";
-// Session pin for clipboard-only (set via chooseTarget).
 export const KEY_FORCE_CLIPBOARD = "selectbeam.forceClipboard";
-// Terminal name -> agent id we launched there. Absence means
-// "unknown / probably plain shell" -> we ask before pasting.
 export const KEY_AGENT_MAP = "selectbeam.terminalAgents";
-// Last browser AI picked (e.g. "chatgpt"). Used by `defaultBrowser: "last"`.
 export const KEY_LAST_BROWSER = "selectbeam.lastBrowserId";
-// Last system browser app picked (e.g. "firefox"). Used by `systemBrowser: "last"`.
 export const KEY_LAST_SYSTEM_BROWSER = "selectbeam.lastSystemBrowserId";
-// Live-tab memory: provider -> LiveTab (global-scoped so the companion
-// popup works across windows).
 export const KEY_LIVE_TABS = "selectbeam.liveTabs";
-// Origin schemes allowed to call the bridge (the companion only —
-// web pages send http(s) origins and are rejected, so no token needed).
 export const EXT_ORIGIN_PREFIXES = ["moz-extension://", "chrome-extension://"];
 
-// --- Bridge limits ---------------------------------------------------------
-
 export const BRIDGE_VERSION = "0.0.5";
-// Max queued pastes kept in memory (temporary, not persisted).
 export const MAX_PENDING = 20;
-// Reuse window: a tab only counts as "the same tab" if it heartbeated
-// within the last 90s. Open tabs beat every 15s, so a live tab always
-// passes; a closed tab stops beating and we open a FRESH chat instead of
-// sending into the void. The TTL setting remains as the outer bound.
 export const LIVE_REUSE_WINDOW_MS = 90_000;
-// Max JSON body for bridge POSTs (2 MB — code selections are small).
 export const MAX_BODY_BYTES = 2 * 1024 * 1024;
-// Max queued paste text (500 KB guard on the /queue forward path).
 export const MAX_PASTE_CHARS = 500_000;
 
-// --- Catalogs --------------------------------------------------------------
-
-// The terminal agents we support. Commands are the standard CLI
-// entry points; users can override them in settings if theirs differ
-// (e.g. `gh copilot` vs `copilot`, or a renamed binary).
-// Run-once tools (e.g. sgpt) are intentionally NOT here: they exit
-// immediately, so launch-then-paste cannot work with them.
 export const AGENTS: AgentDef[] = [
   { id: "opencode", label: "$(terminal) OpenCode", description: "Launch `opencode`", defaultCommand: "opencode" },
   { id: "claude", label: "$(terminal) Claude Code", description: "Launch `claude`", defaultCommand: "claude" },
@@ -60,7 +29,6 @@ export const AGENTS: AgentDef[] = [
   { id: "goose", label: "$(terminal) Goose", description: "Launch `goose`", defaultCommand: "goose" },
 ];
 
-// Free browser chat targets. URLs are the canonical "new chat" entry points.
 export const BROWSERS: BrowserDef[] = [
   { id: "chatgpt", label: "$(globe) ChatGPT", description: "Copy + open chatgpt.com", defaultUrl: "https://chatgpt.com/" },
   { id: "claude", label: "$(globe) Claude", description: "Copy + open claude.ai", defaultUrl: "https://claude.ai/new" },
@@ -70,10 +38,6 @@ export const BROWSERS: BrowserDef[] = [
   { id: "copilot", label: "$(globe) Copilot", description: "Copy + open copilot.microsoft.com", defaultUrl: "https://copilot.microsoft.com/" },
 ];
 
-// Which installed browser app to open the chat URL in. `system` uses the
-// OS default via vscode.openExternal. Others launch that app's binary
-// directly (Linux / Mac / Windows covered in systemBrowser.ts). Add new
-// entries here and they appear in the picker + settings automatically.
 export const SYSTEM_BROWSERS: SystemBrowserDef[] = [
   { id: "system", label: "$(globe) System default", description: "OS default browser (openExternal)" },
   { id: "firefox", label: "$(globe) Firefox", description: "Open in Firefox" },

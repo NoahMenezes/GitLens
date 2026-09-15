@@ -1,6 +1,4 @@
 {
-  // `bun run watch` keeps esbuild rebuilding dist/extension.js on every save,
-  // so the F5 host always picks up your latest change after a reload.
   "version": "2.0.0",
   "tasks": [
     {

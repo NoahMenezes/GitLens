@@ -1,15 +1,3 @@
-// SelectBeam Bridge — background script (Firefox scripts + Chrome SW safe).
-// Owns ALL bridge networking so the server can trust the extension Origin
-// (moz-extension:// / chrome-extension://) instead of a token. Web pages
-// can never send that Origin, so no setup is needed — zero token, zero
-// pairing. Content scripts only inject text and report what they see.
-//
-// Why not fetch from the content script? Its requests carry the PAGE's
-// Origin (https://chatgpt.com/…), which the server must reject. Requests
-// from here carry the EXTENSION's Origin, which the server allows.
-// Content scripts stay alive while a chat tab is open and wake this page
-// with messages, so event-page suspension is harmless by construction.
-
 const DEFAULT_PORT = 51337;
 
 function getApi() {
@@ -20,9 +8,6 @@ function getApi() {
 }
 
 const api = getApi();
-
-// tabId -> provider for tabs that heartbeated. Lets onRemoved tell VS Code
-// exactly which chat closed.
 const tabProviders = {};
 
 async function getPort() {
@@ -58,8 +43,6 @@ async function getJSON(port, path) {
   return r.json();
 }
 
-// Content script says: "I am this chat tab" -> register heartbeat.
-// sender.tab.id lets us notice when THAT tab closes (see onRemoved).
 async function heartbeat(msg, sender) {
   const port = await getPort();
   await postJSON(port, "/tabs", {
@@ -72,27 +55,22 @@ async function heartbeat(msg, sender) {
       tabProviders[sender.tab.id] = msg.provider;
     }
   } catch {
-    // tracking is best-effort only
   }
   return { linked: true };
 }
 
-// Content script says: "anything for me?" -> queued pastes for provider.
 async function poll(msg) {
   const port = await getPort();
   const data = await getJSON(port, "/pending?provider=" + encodeURIComponent(msg.provider));
   return { items: (data && data.items) || [] };
 }
 
-// Content script says: "filled it" -> drop from queue + tell VS Code the
-// paste landed (server pops the "pasted into your tab" message there).
 async function ack(msg) {
   const port = await getPort();
   await postJSON(port, "/ack", { id: msg.id });
   return { ok: true };
 }
 
-// Content script says: "it is IN the chat box now" -> VS Code messages you.
 async function filled(msg) {
   const port = await getPort();
   try {
@@ -101,13 +79,10 @@ async function filled(msg) {
       fileRef: String(msg.fileRef || "").slice(0, 200)
     });
   } catch {
-    // VS Code closed mid-fill — the code is still in the chat box.
   }
   return { ok: true };
 }
 
-// Tab closed or navigated away -> VS Code forgets it NOW so the next send
-// opens a FRESH chat instead of reusing a dead entry.
 async function bye(msg, sender, tabId) {
   const port = await getPort();
   var provider = msg && msg.provider;
@@ -121,15 +96,10 @@ async function bye(msg, sender, tabId) {
   try {
     await postJSON(port, "/bye", { provider });
   } catch {
-    // bridge down — staleness window covers it
   }
   return { ok: true };
 }
 
-// Bring the just-filled chat tab to front. Requested ONLY by the Brave
-// content branch after a verified fill (user asked Yes). Chrome/Edge/Firefox
-// never send this type, so they are unaffected. Needs only the existing
-// "tabs" permission — no manifest change.
 async function focusTab(msg, sender) {
   try {
     const tabId = sender && sender.tab && sender.tab.id;
@@ -148,11 +118,10 @@ async function focusTab(msg, sender) {
     }
     return { ok: true, focused: true };
   } catch {
-    return { ok: false }; // focus is best-effort; the fill already landed
+    return { ok: false };
   }
 }
 
-// Popup says: "how are we?" -> bridge health + live tabs.
 async function status() {
   const port = await getPort();
   const health = await getJSON(port, "/status");
@@ -161,7 +130,6 @@ async function status() {
     const t = await getJSON(port, "/tabs");
     liveTabs = (t && t.liveTabs) || {};
   } catch {
-    liveTabs = {};
   }
   return { port, health, liveTabs };
 }
@@ -173,7 +141,6 @@ function onMessage(msg, sender, sendResponse) {
   if (!fn) {
     return false;
   }
-  // Async reply: return true keeps the channel open (both browsers).
   fn(msg, sender).then(
     (out) => sendResponse({ ok: true, ...out }),
     (err) => sendResponse({ ok: false, error: String((err && err.message) || err) })
@@ -184,11 +151,8 @@ function onMessage(msg, sender, sendResponse) {
 try {
   api.runtime.onMessage.addListener(onMessage);
 } catch {
-  // Unsupported environment — content scripts degrade to manual paste.
 }
 
-// A chat tab closed (or crashed): tell VS Code immediately so the next
-// send opens a FRESH chat instead of reusing the dead tab.
 try {
   if (api.tabs && api.tabs.onRemoved) {
     api.tabs.onRemoved.addListener((tabId) => {
@@ -198,7 +162,6 @@ try {
     });
   }
 } catch {
-  // tabs events unavailable — heartbeat window covers it
 }
 
 try {
@@ -208,10 +171,8 @@ try {
         const cur = await api.storage.local.get({ port: DEFAULT_PORT });
         await api.storage.local.set({ port: Number(cur.port) || DEFAULT_PORT });
       } catch {
-        // storage unavailable — defaults still work in memory.
       }
     });
   }
 } catch {
-  // ignore
 }

@@ -1,7 +1,3 @@
-// SelectBeam Bridge — popup logic (Firefox + Chrome compatible, no deps).
-// Status only: no token, nothing to pair. All bridge traffic goes through
-// the background page; the popup just asks it "how are we?".
-
 (function () {
   "use strict";
 
@@ -12,7 +8,6 @@
     return chrome;
   }
   var api = getApi();
-
   var portEl = document.getElementById("port");
   var statusEl = document.getElementById("status");
 
@@ -28,7 +23,6 @@
         return p;
       }
     } catch {
-      // fall through to callback style
     }
     return new Promise(function (resolve) {
       try {
@@ -46,7 +40,6 @@
       var got = await api.storage.local.get({ port: 51337 });
       portEl.value = got.port || 51337;
     } catch {
-      // defaults stand
     }
   }
 
@@ -55,7 +48,6 @@
     try {
       await api.storage.local.set({ port: port });
     } catch {
-      // ignore
     }
     setStatus("Port saved (" + port + "). Refreshing…", "");
     refresh();
@@ -72,7 +64,6 @@
       setStatus("Bridge unreachable. Is VS Code open with SelectBeam running?", "bad");
       return;
     }
-    var health = res.health || {};
     var tabs = res.liveTabs || {};
     var names = Object.keys(tabs);
     var lines = names.length === 0
@@ -82,14 +73,13 @@
           return "- " + k + ': "' + (t.title || t.url || "?") + '"';
         }).join("\n");
     setStatus(
-      "Bridge OK (v" + (health.version || "?") + ", port " + res.port + ").\n" +
-      "Queued: " + (health.pending || 0) + ".\n" + lines,
+      "Bridge OK (v" + ((res.health && res.health.version) || "?") + ", port " + res.port + ").\n" +
+      "Queued: " + ((res.health && res.health.pending) || 0) + ".\n" + lines,
       "ok"
     );
   }
 
   document.getElementById("save").addEventListener("click", savePort);
   document.getElementById("refresh").addEventListener("click", refresh);
-
   loadPort().then(refresh);
 })();
